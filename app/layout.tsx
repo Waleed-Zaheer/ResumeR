@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={cn("h-full", publicSans.variable, "font-sans")}>
       <body className="min-h-full flex flex-col antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <TooltipProvider delayDuration={200}>
+          <TooltipProvider delay={200}>
             {children}
             <Toaster />
           </TooltipProvider>
