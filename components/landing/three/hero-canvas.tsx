@@ -47,13 +47,15 @@ export function HeroCanvas() {
     <Canvas
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
-      camera={{ position: [0, 0, 5.5], fov: 42 }}
+      camera={{ position: [1.8, 0.4, 6], fov: 40 }}
       style={{ background: "transparent" }}
     >
-      <ambientLight intensity={0.7} />
-      <pointLight position={[4, 4, 4]} intensity={1.4} color={AMBER} />
-      <directionalLight position={[-3, 2, 2]} intensity={0.5} />
-      <RotatingIcosahedron />
+      <ambientLight intensity={0.6} />
+      <pointLight position={[4, 4, 4]} intensity={1.2} color={AMBER} />
+      <directionalLight position={[-3, 2, 2]} intensity={0.4} />
+      <group position={[2.4, 0.6, -1.5]} scale={0.85}>
+        <RotatingIcosahedron />
+      </group>
     </Canvas>
   );
 }

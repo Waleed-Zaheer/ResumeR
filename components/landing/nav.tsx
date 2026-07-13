@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { motion } from "motion/react";
 import { Menu, Moon, Sun } from "lucide-react";
@@ -21,11 +21,15 @@ const navLinks = [
   { href: "#templates", label: "Templates" },
 ];
 
+const noopSubscribe = () => () => {};
+const getMountedSnapshot = () => true;
+const getMountedServerSnapshot = () => false;
+
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  // next-themes only knows the real theme after hydration; useSyncExternalStore
+  // lets us flip from the SSR default to the client value without a setState-in-effect.
+  const mounted = useSyncExternalStore(noopSubscribe, getMountedSnapshot, getMountedServerSnapshot);
 
   const isDark = mounted && resolvedTheme === "dark";
 

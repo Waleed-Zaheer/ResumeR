@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { personalInfoSchema } from "@/lib/validations/resume";
 import type { PersonalInfo } from "@/lib/types/resume";
@@ -18,7 +18,7 @@ export function StepPersonalInfo() {
     watch,
     formState: { errors },
   } = useForm<PersonalInfo>({
-    resolver: zodResolver(personalInfoSchema),
+    resolver: zodResolver(personalInfoSchema) as Resolver<PersonalInfo>,
     defaultValues: personalInfo,
     mode: "onChange",
   });

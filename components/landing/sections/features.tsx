@@ -1,6 +1,6 @@
 "use client";
 
-import { CloudUpload, Eye, FileDown, Gauge, GripVertical, ShieldCheck, type LucideIcon } from "lucide-react";
+import { CloudUpload, Eye, FileDown, LayoutTemplate, Palette, ShieldCheck, type LucideIcon } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useScrollReveal } from "@/components/landing/animations/use-scroll-reveal";
 
@@ -35,14 +35,14 @@ const features: Feature[] = [
       "Every change is saved to your account automatically, so you can pick up right where you left off on any device.",
   },
   {
-    icon: GripVertical,
-    title: "Drag-and-drop sections",
-    description: "Reorder experience, skills, and education with a simple drag — your layout adapts instantly.",
+    icon: LayoutTemplate,
+    title: "4 ATS-safe templates",
+    description: "Minimal, Modern, Compact, and Executive — switch anytime without losing your content.",
   },
   {
-    icon: Gauge,
-    title: "Built-in ATS score",
-    description: "Get instant feedback on keyword match and formatting so you can fix issues before you hit send.",
+    icon: Palette,
+    title: "Accent colors & page size",
+    description: "Fine-tune each template's accent color and switch between Letter and A4 in one click.",
   },
 ];
 

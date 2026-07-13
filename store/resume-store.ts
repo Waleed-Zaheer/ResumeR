@@ -1,7 +1,7 @@
 "use client";
 
 import { createStore, useStore } from "zustand";
-import { createContext, useContext, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { createElement } from "react";
 import type { ResumeData } from "@/lib/types/resume";
 
@@ -36,11 +36,8 @@ export function ResumeStoreProvider({
   initial: ResumeData;
   children: ReactNode;
 }) {
-  const storeRef = useRef<ResumeStoreApi | null>(null);
-  if (!storeRef.current) {
-    storeRef.current = createResumeStore(initial);
-  }
-  return createElement(ResumeStoreContext.Provider, { value: storeRef.current }, children);
+  const [store] = useState<ResumeStoreApi>(() => createResumeStore(initial));
+  return createElement(ResumeStoreContext.Provider, { value: store }, children);
 }
 
 export function useResumeStore<T>(selector: (state: ResumeState) => T): T {

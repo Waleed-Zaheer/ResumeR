@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 
 const HeroCanvas = dynamic(
@@ -20,23 +20,30 @@ function HeroVisualFallback() {
   );
 }
 
+const noopSubscribe = () => () => {};
+
+function getShouldMountSnapshot() {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isSmallViewport = window.innerWidth < 640;
+  return !prefersReducedMotion && !isSmallViewport;
+}
+
+// Server (and pre-hydration client render) never has a WebGL-capable window,
+// so default to the static fallback until useSyncExternalStore re-evaluates
+// the real snapshot on the client — this avoids a hydration mismatch.
+function getServerSnapshot() {
+  return false;
+}
+
 /**
  * Client wrapper that decides whether it's safe/worthwhile to mount the WebGL
  * scene: skips it for prefers-reduced-motion and small viewports, falling
  * back to a static CSS gradient blob instead.
  */
 export function HeroVisual() {
-  const [shouldMount, setShouldMount] = useState(false);
-  const [ready, setReady] = useState(false);
+  const shouldMount = useSyncExternalStore(noopSubscribe, getShouldMountSnapshot, getServerSnapshot);
 
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isSmallViewport = window.innerWidth < 640;
-    setShouldMount(!prefersReducedMotion && !isSmallViewport);
-    setReady(true);
-  }, []);
-
-  if (!ready || !shouldMount) {
+  if (!shouldMount) {
     return <HeroVisualFallback />;
   }
 
