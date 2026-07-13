@@ -74,12 +74,12 @@ export function MarketingNav() {
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button variant="ghost" render={<Link href="/login" />}>
+            <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
               Log in
             </Button>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button render={<Link href="/signup" />}>Get Started</Button>
+            <Button nativeButton={false} render={<Link href="/signup" />}>Get Started</Button>
           </motion.div>
         </div>
 

@@ -26,7 +26,12 @@ export function ResumeMockup() {
       >
         <div
           className="overflow-hidden rounded-xl border border-border/60 bg-white shadow-[0_8px_10px_-6px_rgba(0,0,0,0.15),0_20px_40px_-12px_rgba(0,0,0,0.35)]"
-          style={{ width: `${PAGE_WIDTH_IN * SCALE}in` }}
+          style={{
+            width: `${PAGE_WIDTH_IN * SCALE}in`,
+            height: "min(60vh, 30rem)",
+            maskImage: "linear-gradient(to bottom, black 82%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black 82%, transparent 100%)",
+          }}
         >
           <div
             style={{

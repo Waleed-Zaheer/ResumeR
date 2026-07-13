@@ -1,9 +1,21 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from "docx";
-import type { ResumeData } from "@/lib/types/resume";
+import { Document, Packer, Paragraph, TextRun, AlignmentType, TabStopType, BorderStyle } from "docx";
+import type { ResumeData, TemplateId } from "@/lib/types/resume";
 import { templateConfigs, type TemplateConfig } from "@/components/resume/templates/shared/template-config";
 import { formatDateRange, formatMonthYear, sortExperienceDesc } from "@/lib/resume/format";
 
 const FONT = "Calibri"; // docx cannot embed custom font files — Calibri is universally available and ATS-safe
+const RIGHT_TAB_POSITION = 9360; // twips: Letter width (12240) minus default 1in margins each side
+
+/** Mirrors the DOM `ResumeShell` / PDF `ResumeDocument` structural flags per template. */
+const TEMPLATE_STRUCTURE: Record<
+  TemplateId,
+  { justifyDates: boolean; centerHeader: boolean; headerRule: boolean; compactSkills: boolean }
+> = {
+  minimal: { justifyDates: false, centerHeader: false, headerRule: false, compactSkills: false },
+  modern: { justifyDates: true, centerHeader: false, headerRule: true, compactSkills: false },
+  compact: { justifyDates: false, centerHeader: false, headerRule: false, compactSkills: true },
+  executive: { justifyDates: true, centerHeader: true, headerRule: false, compactSkills: false },
+};
 
 function pt(fontSizePt: number) {
   return fontSizePt * 2; // docx `size` is in half-points — always go through this helper, never inline * 2
@@ -17,14 +29,12 @@ function headingText(cfg: TemplateConfig, label: string) {
   return cfg.headingStyle === "uppercase" ? label.toUpperCase() : label;
 }
 
-function headingParagraph(cfg: TemplateConfig, label: string, alignment?: (typeof AlignmentType)[keyof typeof AlignmentType]) {
+function headingParagraph(cfg: TemplateConfig, label: string) {
   return new Paragraph({
-    heading: HeadingLevel.HEADING_2,
-    alignment,
     spacing: { before: twips(cfg.spacingPt.sectionGap), after: 60 },
     border:
-      cfg.showAccentRule
-        ? { bottom: { style: "single", size: 6, space: 2, color: "444444" } }
+      cfg.headingStyle === "underline-rule"
+        ? { bottom: { style: BorderStyle.SINGLE, size: 6, space: 2, color: "444444" } }
         : undefined,
     children: [
       new TextRun({
@@ -38,6 +48,19 @@ function headingParagraph(cfg: TemplateConfig, label: string, alignment?: (typeo
   });
 }
 
+/** A title line, optionally paired with a right-tab-stopped date (justifyDates templates). */
+function titleParagraph(cfg: TemplateConfig, title: string, dateRange: string | undefined, justifyDates: boolean) {
+  const children = [new TextRun({ text: title, bold: true, size: pt(cfg.fontSizePt.body), font: FONT })];
+  if (justifyDates && dateRange) {
+    children.push(new TextRun({ text: `\t${dateRange}`, size: pt(cfg.fontSizePt.meta), font: FONT, color: "444444" }));
+  }
+  return new Paragraph({
+    tabStops: justifyDates ? [{ type: TabStopType.RIGHT, position: RIGHT_TAB_POSITION }] : undefined,
+    spacing: { after: 20 },
+    children,
+  });
+}
+
 function bulletParagraph(cfg: TemplateConfig, bullet: string) {
   return new Paragraph({
     spacing: { after: twips(cfg.spacingPt.lineGap) },
@@ -45,8 +68,9 @@ function bulletParagraph(cfg: TemplateConfig, bullet: string) {
   });
 }
 
-function metaParagraph(cfg: TemplateConfig, text: string, spacingAfter = 0) {
+function metaParagraph(cfg: TemplateConfig, text: string, spacingAfter = 0, alignment?: (typeof AlignmentType)[keyof typeof AlignmentType]) {
   return new Paragraph({
+    alignment,
     spacing: { after: spacingAfter },
     children: [new TextRun({ text, size: pt(cfg.fontSizePt.meta), font: FONT, color: "444444" })],
   });
@@ -54,8 +78,8 @@ function metaParagraph(cfg: TemplateConfig, text: string, spacingAfter = 0) {
 
 export function buildDocx(data: ResumeData): Document {
   const cfg = templateConfigs[data.templateId];
-  const isExecutive = data.templateId === "executive";
-  const headerAlignment = isExecutive ? AlignmentType.CENTER : undefined;
+  const { justifyDates, centerHeader, headerRule, compactSkills } = TEMPLATE_STRUCTURE[data.templateId];
+  const headerAlignment = centerHeader ? AlignmentType.CENTER : undefined;
   const children: Paragraph[] = [];
 
   children.push(
@@ -63,7 +87,7 @@ export function buildDocx(data: ResumeData): Document {
       alignment: headerAlignment,
       spacing: { after: 40 },
       children: [
-        new TextRun({ text: data.personalInfo.fullName, bold: true, size: pt(cfg.fontSizePt.name), font: FONT }),
+        new TextRun({ text: data.personalInfo.fullName || "Your Name", bold: true, size: pt(cfg.fontSizePt.name), font: FONT }),
       ],
     })
   );
@@ -95,29 +119,30 @@ export function buildDocx(data: ResumeData): Document {
     .filter(Boolean)
     .join("  |  ");
 
+  const hasLinks = data.links.length > 0;
+  const headerTailSpacing = headerRule ? 40 : twips(cfg.spacingPt.sectionGap);
+
   children.push(
-    new Paragraph({
-      alignment: headerAlignment,
-      spacing: { after: data.links.length > 0 ? 20 : twips(cfg.spacingPt.sectionGap) },
-      children: [
-        new TextRun({ text: contactLine, size: pt(cfg.fontSizePt.meta), font: FONT, color: "444444" }),
-      ],
-    })
+    metaParagraph(cfg, contactLine, hasLinks ? 20 : headerTailSpacing, headerAlignment)
   );
 
-  if (data.links.length > 0) {
+  if (hasLinks) {
+    children.push(
+      metaParagraph(
+        cfg,
+        data.links.map((link) => `${link.label}: ${link.url}`).join("  |  "),
+        headerTailSpacing,
+        headerAlignment
+      )
+    );
+  }
+
+  if (headerRule) {
     children.push(
       new Paragraph({
-        alignment: headerAlignment,
         spacing: { after: twips(cfg.spacingPt.sectionGap) },
-        children: [
-          new TextRun({
-            text: data.links.map((link) => `${link.label}: ${link.url}`).join("  |  "),
-            size: pt(cfg.fontSizePt.meta),
-            font: FONT,
-            color: "444444",
-          }),
-        ],
+        border: { bottom: { style: BorderStyle.SINGLE, size: 12, space: 4, color: "444444" } },
+        children: [],
       })
     );
   }
@@ -140,28 +165,12 @@ export function buildDocx(data: ResumeData): Document {
         if (items.length === 0) break;
         children.push(headingParagraph(cfg, "Experience"));
         for (const exp of items) {
-          children.push(
-            new Paragraph({
-              spacing: { after: 20 },
-              children: [
-                new TextRun({
-                  text: `${exp.company}${exp.role ? ` — ${exp.role}` : ""}`,
-                  bold: true,
-                  size: pt(cfg.fontSizePt.body),
-                  font: FONT,
-                }),
-              ],
-            })
-          );
-          const metaLine = [exp.location, formatDateRange(exp.startDate, exp.endDate, exp.current)]
-            .filter(Boolean)
-            .join("   ");
-          if (metaLine) {
-            children.push(metaParagraph(cfg, metaLine, twips(cfg.spacingPt.lineGap)));
-          }
-          for (const bullet of exp.bullets.filter(Boolean)) {
-            children.push(bulletParagraph(cfg, bullet));
-          }
+          const dateRange = formatDateRange(exp.startDate, exp.endDate, exp.current);
+          const title = exp.role ? `${exp.role}, ${exp.company}` : exp.company;
+          children.push(titleParagraph(cfg, title, dateRange, justifyDates));
+          const metaLine = justifyDates ? exp.location : [exp.location, dateRange].filter(Boolean).join("   ");
+          if (metaLine) children.push(metaParagraph(cfg, metaLine, twips(cfg.spacingPt.lineGap)));
+          for (const bullet of exp.bullets.filter(Boolean)) children.push(bulletParagraph(cfg, bullet));
         }
         break;
       }
@@ -169,50 +178,49 @@ export function buildDocx(data: ResumeData): Document {
         if (data.education.length === 0) break;
         children.push(headingParagraph(cfg, "Education"));
         for (const edu of data.education) {
+          const dateRange = formatDateRange(edu.startDate, edu.endDate, edu.current);
+          const title = edu.fieldOfStudy
+            ? `${edu.degree}, ${edu.fieldOfStudy}, ${edu.institution}`
+            : `${edu.degree}, ${edu.institution}`;
+          children.push(titleParagraph(cfg, title, dateRange, justifyDates));
+          const metaParts = justifyDates
+            ? [edu.location, edu.gpa ? `GPA: ${edu.gpa}` : ""]
+            : [edu.location, dateRange, edu.gpa ? `GPA: ${edu.gpa}` : ""];
+          const metaLine = metaParts.filter(Boolean).join("   ");
+          if (metaLine) children.push(metaParagraph(cfg, metaLine, twips(cfg.spacingPt.lineGap)));
+          for (const bullet of edu.bullets.filter(Boolean)) children.push(bulletParagraph(cfg, bullet));
+        }
+        break;
+      }
+      case "skills": {
+        const groups = data.skills.filter((g) => g.items.length > 0);
+        if (groups.length === 0) break;
+        children.push(headingParagraph(cfg, "Skills"));
+        if (compactSkills) {
           children.push(
             new Paragraph({
-              spacing: { after: 20 },
+              spacing: { after: twips(cfg.spacingPt.lineGap) },
               children: [
                 new TextRun({
-                  text: `${edu.institution}${edu.degree ? ` — ${edu.degree}` : ""}`,
-                  bold: true,
+                  text: groups.map((g) => `${g.category}: ${g.items.join(", ")}`).join("   •   "),
                   size: pt(cfg.fontSizePt.body),
                   font: FONT,
                 }),
               ],
             })
           );
-          const metaLine = [
-            edu.fieldOfStudy,
-            edu.location,
-            formatDateRange(edu.startDate, edu.endDate, edu.current),
-            edu.gpa ? `GPA: ${edu.gpa}` : "",
-          ]
-            .filter(Boolean)
-            .join("   ");
-          if (metaLine) {
-            children.push(metaParagraph(cfg, metaLine, twips(cfg.spacingPt.lineGap)));
+        } else {
+          for (const group of groups) {
+            children.push(
+              new Paragraph({
+                spacing: { after: twips(cfg.spacingPt.lineGap) },
+                children: [
+                  new TextRun({ text: `${group.category}: `, bold: true, size: pt(cfg.fontSizePt.body), font: FONT }),
+                  new TextRun({ text: group.items.join(", "), size: pt(cfg.fontSizePt.body), font: FONT }),
+                ],
+              })
+            );
           }
-          for (const bullet of edu.bullets.filter(Boolean)) {
-            children.push(bulletParagraph(cfg, bullet));
-          }
-        }
-        break;
-      }
-      case "skills": {
-        if (data.skills.length === 0) break;
-        children.push(headingParagraph(cfg, "Skills"));
-        for (const group of data.skills) {
-          if (group.items.length === 0) continue;
-          children.push(
-            new Paragraph({
-              spacing: { after: twips(cfg.spacingPt.lineGap) },
-              children: [
-                new TextRun({ text: `${group.category}: `, bold: true, size: pt(cfg.fontSizePt.body), font: FONT }),
-                new TextRun({ text: group.items.join(", "), size: pt(cfg.fontSizePt.body), font: FONT }),
-              ],
-            })
-          );
         }
         break;
       }
@@ -221,33 +229,18 @@ export function buildDocx(data: ResumeData): Document {
         children.push(headingParagraph(cfg, "Projects"));
         for (const project of data.projects) {
           const dateRange = formatDateRange(project.startDate, project.endDate, false);
-          children.push(
-            new Paragraph({
-              spacing: { after: 20 },
-              children: [
-                new TextRun({ text: project.name, bold: true, size: pt(cfg.fontSizePt.body), font: FONT }),
-                ...(dateRange
-                  ? [new TextRun({ text: `   ${dateRange}`, size: pt(cfg.fontSizePt.meta), font: FONT, color: "444444" })]
-                  : []),
-              ],
-            })
-          );
-          if (project.url) {
-            children.push(metaParagraph(cfg, project.url, twips(cfg.spacingPt.lineGap)));
-          }
+          children.push(titleParagraph(cfg, project.name, dateRange, justifyDates));
+          if (!justifyDates && dateRange) children.push(metaParagraph(cfg, dateRange, twips(cfg.spacingPt.lineGap)));
+          if (project.url) children.push(metaParagraph(cfg, project.url, twips(cfg.spacingPt.lineGap)));
           if (project.description) {
             children.push(
               new Paragraph({
                 spacing: { after: twips(cfg.spacingPt.lineGap) },
-                children: [
-                  new TextRun({ text: project.description, size: pt(cfg.fontSizePt.body), font: FONT }),
-                ],
+                children: [new TextRun({ text: project.description, size: pt(cfg.fontSizePt.body), font: FONT })],
               })
             );
           }
-          for (const bullet of project.bullets.filter(Boolean)) {
-            children.push(bulletParagraph(cfg, bullet));
-          }
+          for (const bullet of project.bullets.filter(Boolean)) children.push(bulletParagraph(cfg, bullet));
         }
         break;
       }
@@ -256,21 +249,10 @@ export function buildDocx(data: ResumeData): Document {
         children.push(headingParagraph(cfg, "Certifications"));
         for (const cert of data.certifications) {
           const dateText = formatMonthYear(cert.date);
-          children.push(
-            new Paragraph({
-              spacing: { after: cert.url ? 20 : twips(cfg.spacingPt.lineGap) },
-              children: [
-                new TextRun({
-                  text: `${cert.name}${cert.issuer ? ` — ${cert.issuer}` : ""}${dateText ? ` (${dateText})` : ""}`,
-                  size: pt(cfg.fontSizePt.body),
-                  font: FONT,
-                }),
-              ],
-            })
-          );
-          if (cert.url) {
-            children.push(metaParagraph(cfg, cert.url, twips(cfg.spacingPt.lineGap)));
-          }
+          const title = cert.issuer ? `${cert.name}, ${cert.issuer}` : cert.name;
+          children.push(titleParagraph(cfg, title, dateText, justifyDates));
+          if (!justifyDates && dateText) children.push(metaParagraph(cfg, dateText, twips(cfg.spacingPt.lineGap)));
+          if (cert.url) children.push(metaParagraph(cfg, cert.url, twips(cfg.spacingPt.lineGap)));
         }
         break;
       }
@@ -305,7 +287,3 @@ export async function renderDocxBuffer(data: ResumeData): Promise<Buffer> {
   const doc = buildDocx(data);
   return Packer.toBuffer(doc);
 }
-
-// Referenced for potential future use of Word outline heading styles; kept to
-// match the documented import surface for this module.
-void HeadingLevel;

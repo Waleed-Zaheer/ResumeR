@@ -18,7 +18,7 @@ export function Cta() {
             Create a free account and have an ATS-friendly resume ready to export in minutes.
           </p>
           <div className="mt-8 flex justify-center">
-            <Button size="lg" render={<Link href="/signup" />}>
+            <Button size="lg" nativeButton={false} render={<Link href="/signup" />}>
               Get Started
               <ArrowRight />
             </Button>
