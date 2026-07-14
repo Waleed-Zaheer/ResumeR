@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition, type ComponentType } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import {
   ArrowLeft,
   ArrowRight,

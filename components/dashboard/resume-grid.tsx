@@ -1,7 +1,7 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { deleteResumeAction } from "@/lib/actions/resume-actions";
 import { ResumeCard } from "@/components/dashboard/resume-card";
 import {

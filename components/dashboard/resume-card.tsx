@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { MoreVertical, Pencil, Copy, Download, Trash2 } from "lucide-react";
 import { duplicateResumeAction } from "@/lib/actions/resume-actions";
 import { templateConfigs } from "@/components/resume/templates/shared/template-config";

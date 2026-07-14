@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { AlertCircle, Check, Loader2 } from "lucide-react";
 import { useResumeStore } from "@/store/resume-store";
 import { updateResumeAction } from "@/lib/actions/resume-actions";

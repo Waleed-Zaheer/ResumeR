@@ -1,5 +1,15 @@
 "use client"
 
+/**
+ * Label — a form-control `<label>` that dims itself when the group
+ * or its associated peer control is disabled.
+ *
+ * Usage:
+ *   <Label htmlFor="email">Email</Label>
+ *
+ * Depends on:
+ *   - src/lib/utils.ts (cn helper)
+ */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
