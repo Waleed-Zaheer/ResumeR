@@ -1,10 +1,11 @@
+import { FileText } from "lucide-react";
 import { redirect } from "next/navigation";
+
 import { auth } from "@/auth";
+import { NewResumeButton } from "@/components/dashboard/new-resume-button";
+import { ResumeGrid, ResumeListItem } from "@/components/dashboard/resume-grid";
 import { dbConnect } from "@/lib/db/dbConnect";
 import { Resume } from "@/models/Resume";
-import { NewResumeButton } from "@/components/dashboard/new-resume-button";
-import { ResumeGrid, type ResumeListItem } from "@/components/dashboard/resume-grid";
-import { FileText } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -28,10 +29,12 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-8xl px-4 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight">Your Resumes</h1>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            Your Resumes
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Create, edit, and export ATS-friendly resumes.
           </p>
@@ -45,10 +48,12 @@ export default async function DashboardPage() {
             <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
               <FileText className="size-7" />
             </div>
-            <h2 className="mt-4 font-heading text-lg font-medium">No resumes yet</h2>
+            <h2 className="mt-4 font-heading text-lg font-medium">
+              No resumes yet
+            </h2>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              You haven&apos;t created any resumes. Start building your first ATS-optimized
-              resume in seconds.
+              You haven&apos;t created any resumes. Start building your first
+              ATS-optimized resume in seconds.
             </p>
             <NewResumeButton className="mt-6" />
           </div>
