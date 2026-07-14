@@ -16,7 +16,10 @@ function TemplateCard({ id }: { id: TemplateId }) {
 
   return (
     <div data-reveal className="group">
-      <div className="overflow-hidden rounded-xl border border-border bg-card p-3 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none select-none overflow-hidden rounded-xl border border-border bg-card p-3 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg"
+      >
         <div
           className="mx-auto aspect-[8.5/11] w-full overflow-hidden rounded-md bg-white"
           style={{ width: `${PAGE_WIDTH_IN * SCALE}in` }}

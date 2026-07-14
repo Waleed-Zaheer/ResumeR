@@ -15,7 +15,10 @@ const SCALE = 0.44;
  */
 export function ResumeMockup() {
   return (
-    <div className="relative mx-auto flex w-full max-w-md items-center justify-center [perspective:1800px] lg:max-w-none">
+    <div
+      aria-hidden="true"
+      className="relative mx-auto flex w-full max-w-md select-none items-center justify-center [perspective:1800px] lg:max-w-none"
+    >
       <motion.div
         initial={{ opacity: 0, y: 24, rotateY: -14 }}
         animate={{ opacity: 1, y: 0, rotateY: -10 }}
@@ -25,7 +28,7 @@ export function ResumeMockup() {
         className="relative"
       >
         <div
-          className="overflow-hidden rounded-xl border border-border/60 bg-white shadow-[0_8px_10px_-6px_rgba(0,0,0,0.15),0_20px_40px_-12px_rgba(0,0,0,0.35)]"
+          className="pointer-events-none overflow-hidden rounded-xl border border-border/60 bg-white shadow-[0_8px_10px_-6px_rgba(0,0,0,0.15),0_20px_40px_-12px_rgba(0,0,0,0.35)]"
           style={{
             width: `${PAGE_WIDTH_IN * SCALE}in`,
             height: "min(60vh, 30rem)",
@@ -50,7 +53,7 @@ export function ResumeMockup() {
           animate={{ opacity: 1, scale: 1, x: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
           style={{ transform: "translateZ(60px)" }}
-          className="absolute -left-6 top-10 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 shadow-lg sm:-left-10"
+          className="pointer-events-none absolute -left-6 top-10 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 shadow-lg sm:-left-10"
         >
           <div className="flex size-7 items-center justify-center rounded-full bg-emerald-500/15">
             <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
@@ -66,7 +69,7 @@ export function ResumeMockup() {
           animate={{ opacity: 1, scale: 1, x: 0 }}
           transition={{ delay: 0.8, duration: 0.5 }}
           style={{ transform: "translateZ(60px)" }}
-          className="absolute -right-4 bottom-16 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 shadow-lg sm:-right-8"
+          className="pointer-events-none absolute -right-4 bottom-16 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 shadow-lg sm:-right-8"
         >
           <div className="flex size-7 items-center justify-center rounded-full bg-primary/20">
             <Sparkles className="size-4 text-primary" />
