@@ -47,6 +47,15 @@ export const templateConfigs: Record<TemplateId, TemplateConfig> = {
     headingStyle: "uppercase",
     showAccentRule: true,
   },
+  europass: {
+    id: "europass",
+    label: "Europass",
+    description: "The standard European CV format, CEFR language grid included.",
+    fontSizePt: { name: 18, heading: 11, body: 10, meta: 9 },
+    spacingPt: { sectionGap: 14, itemGap: 8, lineGap: 3 },
+    headingStyle: "uppercase",
+    showAccentRule: true,
+  },
 };
 
-export const templateOrder: TemplateId[] = ["minimal", "modern", "compact", "executive"];
+export const templateOrder: TemplateId[] = ["minimal", "modern", "compact", "executive", "europass"];

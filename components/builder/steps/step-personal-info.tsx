@@ -77,6 +77,16 @@ export function StepPersonalInfo() {
             <p className="text-sm text-destructive">{errors.website.message}</p>
           )}
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="nationality">Nationality</Label>
+          <Input id="nationality" placeholder="e.g. German" {...register("nationality")} />
+          <p className="text-xs text-muted-foreground">Used by the Europass template.</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="dateOfBirth">Date of birth</Label>
+          <Input id="dateOfBirth" type="date" {...register("dateOfBirth")} />
+          <p className="text-xs text-muted-foreground">Used by the Europass template.</p>
+        </div>
       </div>
     </div>
   );

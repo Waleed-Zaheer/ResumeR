@@ -7,6 +7,8 @@ export const personalInfoSchema = z.object({
   phone: z.string().optional().default(""),
   location: z.string().optional().default(""),
   website: z.string().url("Enter a valid URL").optional().or(z.literal("")).default(""),
+  nationality: z.string().optional().default(""),
+  dateOfBirth: z.string().optional().default(""),
 });
 
 export const linkItemSchema = z.object({
@@ -68,13 +70,24 @@ export const certificationItemSchema = z.object({
   url: z.string().url().optional().or(z.literal("")).default(""),
 });
 
+export const cefrLevelSchema = z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]);
+
+export const cefrSchema = z.object({
+  listening: cefrLevelSchema.optional(),
+  reading: cefrLevelSchema.optional(),
+  spokenInteraction: cefrLevelSchema.optional(),
+  spokenProduction: cefrLevelSchema.optional(),
+  writing: cefrLevelSchema.optional(),
+});
+
 export const languageItemSchema = z.object({
   id: z.string(),
   language: z.string().min(1),
   proficiency: z.enum(["Native", "Fluent", "Professional", "Conversational", "Basic"]),
+  cefr: cefrSchema.optional(),
 });
 
-export const templateIdSchema = z.enum(["minimal", "modern", "compact", "executive"]);
+export const templateIdSchema = z.enum(["minimal", "modern", "compact", "executive", "europass"]);
 export const accentColorSchema = z.enum(["default", "blue", "green", "slate", "burgundy"]);
 
 export const SECTION_KEYS = [
@@ -95,6 +108,8 @@ export const resumeDataSchema = z.object({
     phone: "",
     location: "",
     website: "",
+    nationality: "",
+    dateOfBirth: "",
   }),
   summary: z.string().default(""),
   experience: z.array(experienceItemSchema).default([]),
@@ -120,6 +135,8 @@ export type SkillGroup = z.infer<typeof skillGroupSchema>;
 export type ProjectItem = z.infer<typeof projectItemSchema>;
 export type CertificationItem = z.infer<typeof certificationItemSchema>;
 export type LanguageItem = z.infer<typeof languageItemSchema>;
+export type CefrLevel = z.infer<typeof cefrLevelSchema>;
+export type Cefr = z.infer<typeof cefrSchema>;
 export type LinkItem = z.infer<typeof linkItemSchema>;
 export type TemplateId = z.infer<typeof templateIdSchema>;
 export type AccentColor = z.infer<typeof accentColorSchema>;

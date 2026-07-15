@@ -12,6 +12,8 @@ export const sampleResumeData: ResumeData = {
     phone: "(415) 555-0148",
     location: "San Francisco, CA",
     website: "mayachen.design",
+    nationality: "American",
+    dateOfBirth: "1992-04-18",
   },
   summary:
     "Product designer with 7+ years crafting design systems and B2B SaaS experiences. Led the redesign of a core workflow that increased activation by 34% and cut support tickets by half.",

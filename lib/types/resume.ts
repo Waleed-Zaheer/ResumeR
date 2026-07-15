@@ -7,6 +7,8 @@ export type {
   ProjectItem,
   CertificationItem,
   LanguageItem,
+  CefrLevel,
+  Cefr,
   LinkItem,
   TemplateId,
   AccentColor,

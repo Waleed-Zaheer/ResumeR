@@ -55,6 +55,19 @@ const certificationItemSchema = new Schema(
   { _id: false }
 );
 
+const cefrLevels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+const cefrSchema = new Schema(
+  {
+    listening: { type: String, enum: cefrLevels },
+    reading: { type: String, enum: cefrLevels },
+    spokenInteraction: { type: String, enum: cefrLevels },
+    spokenProduction: { type: String, enum: cefrLevels },
+    writing: { type: String, enum: cefrLevels },
+  },
+  { _id: false }
+);
+
 const languageItemSchema = new Schema(
   {
     id: String,
@@ -63,6 +76,7 @@ const languageItemSchema = new Schema(
       type: String,
       enum: ["Native", "Fluent", "Professional", "Conversational", "Basic"],
     },
+    cefr: cefrSchema,
   },
   { _id: false }
 );
@@ -78,6 +92,8 @@ const resumeDataSchema = new Schema(
       phone: { type: String, default: "" },
       location: { type: String, default: "" },
       website: { type: String, default: "" },
+      nationality: { type: String, default: "" },
+      dateOfBirth: { type: String, default: "" },
     },
     summary: { type: String, default: "" },
     experience: [experienceItemSchema],
@@ -90,7 +106,7 @@ const resumeDataSchema = new Schema(
     sectionOrder: { type: [String], enum: SECTION_KEYS, default: [...SECTION_KEYS] },
     templateId: {
       type: String,
-      enum: ["minimal", "modern", "compact", "executive"],
+      enum: ["minimal", "modern", "compact", "executive", "europass"],
       default: "minimal",
     },
     accentColor: { type: String, default: "default" },

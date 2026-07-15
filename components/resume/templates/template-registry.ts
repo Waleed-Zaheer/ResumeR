@@ -9,6 +9,8 @@ import { MinimalPdfDocument } from "./pdf/minimal";
 import { ModernPdfDocument } from "./pdf/modern";
 import { CompactPdfDocument } from "./pdf/compact";
 import { ExecutivePdfDocument } from "./pdf/executive";
+import { EuropassTemplate } from "./dom/europass";
+import { EuropassPdfDocument } from "./pdf/europass";
 
 type TemplateComponent = ComponentType<{ data: ResumeData }>;
 
@@ -48,5 +50,12 @@ export const templateRegistry: Record<TemplateId, TemplateRegistryEntry> = {
     description: templateConfigs.executive.description,
     Dom: ExecutiveTemplate,
     Pdf: ExecutivePdfDocument,
+  },
+  europass: {
+    id: "europass",
+    label: templateConfigs.europass.label,
+    description: templateConfigs.europass.description,
+    Dom: EuropassTemplate,
+    Pdf: EuropassPdfDocument,
   },
 };

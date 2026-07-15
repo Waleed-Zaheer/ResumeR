@@ -1,5 +1,5 @@
-import { Document, Packer, Paragraph, TextRun, AlignmentType, TabStopType, BorderStyle } from "docx";
-import type { ResumeData, TemplateId } from "@/lib/types/resume";
+import { Document, Packer, Paragraph, TextRun, AlignmentType, TabStopType, BorderStyle, Table, TableRow, TableCell, WidthType } from "docx";
+import type { ResumeData, TemplateId, LanguageItem, CefrLevel } from "@/lib/types/resume";
 import { templateConfigs, type TemplateConfig } from "@/components/resume/templates/shared/template-config";
 import { formatDateRange, formatMonthYear, sortExperienceDesc } from "@/lib/resume/format";
 
@@ -15,7 +15,22 @@ const TEMPLATE_STRUCTURE: Record<
   modern: { justifyDates: true, centerHeader: false, headerRule: true, compactSkills: false },
   compact: { justifyDates: false, centerHeader: false, headerRule: false, compactSkills: true },
   executive: { justifyDates: true, centerHeader: true, headerRule: false, compactSkills: false },
+  europass: { justifyDates: true, centerHeader: false, headerRule: true, compactSkills: false },
 };
+
+const EUROPASS_BLUE = "003399";
+
+const CEFR_COLUMNS: { key: keyof NonNullable<LanguageItem["cefr"]>; label: string }[] = [
+  { key: "listening", label: "Listening" },
+  { key: "reading", label: "Reading" },
+  { key: "spokenInteraction", label: "Spoken interaction" },
+  { key: "spokenProduction", label: "Spoken production" },
+  { key: "writing", label: "Writing" },
+];
+
+function cefrCell(level: CefrLevel | undefined): string {
+  return level ?? "—";
+}
 
 function pt(fontSizePt: number) {
   return fontSizePt * 2; // docx `size` is in half-points — always go through this helper, never inline * 2
@@ -76,11 +91,55 @@ function metaParagraph(cfg: TemplateConfig, text: string, spacingAfter = 0, alig
   });
 }
 
+function buildCefrTable(cfg: TemplateConfig, cefr: NonNullable<LanguageItem["cefr"]>): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: CEFR_COLUMNS.map(
+          (col) =>
+            new TableCell({
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [
+                    new TextRun({ text: col.label, bold: true, size: pt(cfg.fontSizePt.meta), font: FONT, color: "444444" }),
+                  ],
+                }),
+              ],
+            })
+        ),
+      }),
+      new TableRow({
+        children: CEFR_COLUMNS.map(
+          (col) =>
+            new TableCell({
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [
+                    new TextRun({
+                      text: cefrCell(cefr[col.key]),
+                      bold: true,
+                      size: pt(cfg.fontSizePt.meta),
+                      font: FONT,
+                      color: EUROPASS_BLUE,
+                    }),
+                  ],
+                }),
+              ],
+            })
+        ),
+      }),
+    ],
+  });
+}
+
 export function buildDocx(data: ResumeData): Document {
   const cfg = templateConfigs[data.templateId];
   const { justifyDates, centerHeader, headerRule, compactSkills } = TEMPLATE_STRUCTURE[data.templateId];
   const headerAlignment = centerHeader ? AlignmentType.CENTER : undefined;
-  const children: Paragraph[] = [];
+  const children: (Paragraph | Table)[] = [];
 
   children.push(
     new Paragraph({
@@ -141,10 +200,37 @@ export function buildDocx(data: ResumeData): Document {
     children.push(
       new Paragraph({
         spacing: { after: twips(cfg.spacingPt.sectionGap) },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 12, space: 4, color: "444444" } },
+        border: {
+          bottom: {
+            style: BorderStyle.SINGLE,
+            size: 12,
+            space: 4,
+            color: data.templateId === "europass" ? EUROPASS_BLUE : "444444",
+          },
+        },
         children: [],
       })
     );
+  }
+
+  if (data.templateId === "europass") {
+    const rows: [string, string][] = [];
+    if (data.personalInfo.nationality) rows.push(["Nationality", data.personalInfo.nationality]);
+    if (data.personalInfo.dateOfBirth) rows.push(["Date of birth", data.personalInfo.dateOfBirth]);
+    if (rows.length > 0) {
+      children.push(headingParagraph(cfg, "Personal Information"));
+      for (const [label, value] of rows) {
+        children.push(
+          new Paragraph({
+            spacing: { after: twips(cfg.spacingPt.lineGap) },
+            children: [
+              new TextRun({ text: `${label}: `, bold: true, size: pt(cfg.fontSizePt.meta), font: FONT, color: "444444" }),
+              new TextRun({ text: value, size: pt(cfg.fontSizePt.body), font: FONT }),
+            ],
+          })
+        );
+      }
+    }
   }
 
   for (const section of data.sectionOrder) {
@@ -258,19 +344,35 @@ export function buildDocx(data: ResumeData): Document {
       }
       case "languages": {
         if (data.languages.length === 0) break;
-        children.push(headingParagraph(cfg, "Languages"));
-        children.push(
-          new Paragraph({
-            spacing: { after: twips(cfg.spacingPt.lineGap) },
-            children: [
-              new TextRun({
-                text: data.languages.map((lang) => `${lang.language} (${lang.proficiency})`).join(", "),
-                size: pt(cfg.fontSizePt.body),
-                font: FONT,
-              }),
-            ],
-          })
-        );
+        children.push(headingParagraph(cfg, data.templateId === "europass" ? "Language Skills" : "Languages"));
+        if (data.templateId === "europass") {
+          for (const lang of data.languages) {
+            children.push(
+              new Paragraph({
+                spacing: { after: 40 },
+                children: [new TextRun({ text: lang.language, bold: true, size: pt(cfg.fontSizePt.body), font: FONT })],
+              })
+            );
+            if (lang.cefr) {
+              children.push(buildCefrTable(cfg, lang.cefr));
+            } else {
+              children.push(metaParagraph(cfg, lang.proficiency, twips(cfg.spacingPt.itemGap)));
+            }
+          }
+        } else {
+          children.push(
+            new Paragraph({
+              spacing: { after: twips(cfg.spacingPt.lineGap) },
+              children: [
+                new TextRun({
+                  text: data.languages.map((lang) => `${lang.language} (${lang.proficiency})`).join(", "),
+                  size: pt(cfg.fontSizePt.body),
+                  font: FONT,
+                }),
+              ],
+            })
+          );
+        }
         break;
       }
       default:
