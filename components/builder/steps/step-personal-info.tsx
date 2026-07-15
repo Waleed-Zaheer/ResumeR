@@ -131,7 +131,7 @@ export function StepPersonalInfo() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="fullName">Full name</Label>
-          <Input id="fullName" {...register("fullName")} />
+          <Input id="fullName" placeholder="e.g. Jane Doe" {...register("fullName")} />
           {errors.fullName && (
             <p className="text-sm text-destructive">{errors.fullName.message}</p>
           )}
@@ -145,12 +145,12 @@ export function StepPersonalInfo() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" {...register("email")} />
+          <Input id="email" type="email" placeholder="jane@example.com" {...register("email")} />
           {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" {...register("phone")} />
+          <Input id="phone" placeholder="+1 (555) 123-4567" {...register("phone")} />
           {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
         </div>
         <div className="space-y-2">

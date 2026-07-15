@@ -113,6 +113,7 @@ export function StepCertificationsLanguages() {
                   <Input
                     value={item.name}
                     onChange={(e) => updateCertification(item.id, { name: e.target.value })}
+                    placeholder="e.g. AWS Certified Solutions Architect"
                   />
                 </div>
                 <div className="space-y-2">
@@ -120,6 +121,7 @@ export function StepCertificationsLanguages() {
                   <Input
                     value={item.issuer}
                     onChange={(e) => updateCertification(item.id, { issuer: e.target.value })}
+                    placeholder="e.g. Amazon Web Services"
                   />
                 </div>
                 <div className="space-y-2">
@@ -128,6 +130,7 @@ export function StepCertificationsLanguages() {
                     type="month"
                     value={item.date}
                     onChange={(e) => updateCertification(item.id, { date: e.target.value })}
+                    placeholder="YYYY-MM"
                   />
                 </div>
                 <div className="space-y-2">

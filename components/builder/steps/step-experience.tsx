@@ -82,15 +82,27 @@ export function StepExperience() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Company</Label>
-                  <Input value={item.company} onChange={(e) => update(item.id, { company: e.target.value })} />
+                  <Input
+                    value={item.company}
+                    onChange={(e) => update(item.id, { company: e.target.value })}
+                    placeholder="e.g. Acme Corp"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Role</Label>
-                  <Input value={item.role} onChange={(e) => update(item.id, { role: e.target.value })} />
+                  <Input
+                    value={item.role}
+                    onChange={(e) => update(item.id, { role: e.target.value })}
+                    placeholder="e.g. Senior Software Engineer"
+                  />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Location</Label>
-                  <Input value={item.location} onChange={(e) => update(item.id, { location: e.target.value })} />
+                  <Input
+                    value={item.location}
+                    onChange={(e) => update(item.id, { location: e.target.value })}
+                    placeholder="City, State"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Start date</Label>
@@ -98,6 +110,7 @@ export function StepExperience() {
                     type="month"
                     value={item.startDate}
                     onChange={(e) => update(item.id, { startDate: e.target.value })}
+                    placeholder="YYYY-MM"
                   />
                 </div>
                 <div className="space-y-2">
@@ -107,6 +120,7 @@ export function StepExperience() {
                     value={item.endDate}
                     disabled={item.current}
                     onChange={(e) => update(item.id, { endDate: e.target.value })}
+                    placeholder="YYYY-MM"
                   />
                 </div>
               </div>

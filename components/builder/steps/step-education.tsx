@@ -87,22 +87,32 @@ export function StepEducation() {
                   <Input
                     value={item.institution}
                     onChange={(e) => update(item.id, { institution: e.target.value })}
+                    placeholder="e.g. State University"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Degree</Label>
-                  <Input value={item.degree} onChange={(e) => update(item.id, { degree: e.target.value })} />
+                  <Input
+                    value={item.degree}
+                    onChange={(e) => update(item.id, { degree: e.target.value })}
+                    placeholder="e.g. Bachelor of Science"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Field of study</Label>
                   <Input
                     value={item.fieldOfStudy}
                     onChange={(e) => update(item.id, { fieldOfStudy: e.target.value })}
+                    placeholder="e.g. Computer Science"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Location</Label>
-                  <Input value={item.location} onChange={(e) => update(item.id, { location: e.target.value })} />
+                  <Input
+                    value={item.location}
+                    onChange={(e) => update(item.id, { location: e.target.value })}
+                    placeholder="City, State"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Start date</Label>
@@ -110,6 +120,7 @@ export function StepEducation() {
                     type="month"
                     value={item.startDate}
                     onChange={(e) => update(item.id, { startDate: e.target.value })}
+                    placeholder="YYYY-MM"
                   />
                 </div>
                 <div className="space-y-2">
@@ -119,11 +130,16 @@ export function StepEducation() {
                     value={item.endDate}
                     disabled={item.current}
                     onChange={(e) => update(item.id, { endDate: e.target.value })}
+                    placeholder="YYYY-MM"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>GPA</Label>
-                  <Input value={item.gpa} onChange={(e) => update(item.id, { gpa: e.target.value })} />
+                  <Input
+                    value={item.gpa}
+                    onChange={(e) => update(item.id, { gpa: e.target.value })}
+                    placeholder="e.g. 3.8"
+                  />
                 </div>
               </div>
               <div className="flex items-center gap-2">

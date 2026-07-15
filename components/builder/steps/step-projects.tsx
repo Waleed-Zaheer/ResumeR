@@ -79,7 +79,11 @@ export function StepProjects() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
                   <Label>Name</Label>
-                  <Input value={item.name} onChange={(e) => update(item.id, { name: e.target.value })} />
+                  <Input
+                    value={item.name}
+                    onChange={(e) => update(item.id, { name: e.target.value })}
+                    placeholder="e.g. Personal Portfolio Site"
+                  />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label>URL</Label>
@@ -95,6 +99,7 @@ export function StepProjects() {
                     type="month"
                     value={item.startDate}
                     onChange={(e) => update(item.id, { startDate: e.target.value })}
+                    placeholder="YYYY-MM"
                   />
                 </div>
                 <div className="space-y-2">
@@ -103,6 +108,7 @@ export function StepProjects() {
                     type="month"
                     value={item.endDate}
                     onChange={(e) => update(item.id, { endDate: e.target.value })}
+                    placeholder="YYYY-MM"
                   />
                 </div>
               </div>
@@ -112,6 +118,7 @@ export function StepProjects() {
                   rows={3}
                   value={item.description}
                   onChange={(e) => update(item.id, { description: e.target.value })}
+                  placeholder="What the project does and the impact it had…"
                 />
               </div>
               <BulletListEditor
