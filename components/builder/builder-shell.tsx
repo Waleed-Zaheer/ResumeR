@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type ComponentType } from "react";
+import { useState, useTransition, type ComponentType } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "@/components/ui/sonner";
 import {
@@ -14,6 +14,7 @@ import {
   FileText,
   FolderKanban,
   GraduationCap,
+  Loader2,
   Palette,
   Pencil,
   Sparkles,
@@ -21,8 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useResumeStore } from "@/store/resume-store";
-import { updateResumeAction } from "@/lib/actions/resume-actions";
-import { useDebouncedCallback } from "@/lib/hooks/use-debounced-callback";
+import { downloadResumeExport, ResumeExportError, type ExportFormat } from "@/lib/resume/download";
 import type { ResumeData } from "@/lib/types/resume";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -83,35 +83,33 @@ const STEPS: StepDef[] = [
   },
 ];
 
-export function BuilderShell({ resumeId, title }: { resumeId: string; title: string }) {
+export function BuilderShell() {
   const [step, setStep] = useState(0);
   const [mobileView, setMobileView] = useState<"form" | "preview">("form");
+  const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
 
   const data = useResumeStore((s) => s.data);
-  const setSaveStatus = useResumeStore((s) => s.setSaveStatus);
   const [, startTransition] = useTransition();
-  const isFirstRun = useRef(true);
 
-  const debouncedSave = useDebouncedCallback((current: ResumeData) => {
-    setSaveStatus("saving");
+  const title = data.personalInfo.fullName.trim() || "Untitled Resume";
+
+  function handleExport(format: ExportFormat) {
+    if (exportingFormat) return;
+    setExportingFormat(format);
     startTransition(async () => {
-      const result = await updateResumeAction(resumeId, current);
-      if (result.ok) {
-        setSaveStatus("saved");
-      } else {
-        setSaveStatus("error");
-        toast.error(result.error || "Failed to save resume");
+      try {
+        await downloadResumeExport(data, format);
+      } catch (error) {
+        const message =
+          error instanceof ResumeExportError
+            ? error.message
+            : "Something went wrong exporting your resume. Please try again.";
+        toast.error(message);
+      } finally {
+        setExportingFormat(null);
       }
     });
-  }, 800);
-
-  useEffect(() => {
-    if (isFirstRun.current) {
-      isFirstRun.current = false;
-      return;
-    }
-    debouncedSave(data);
-  }, [data, debouncedSave]);
+  }
 
   const StepComponent = STEPS[step].Component;
   const isLastStep = step === STEPS.length - 1;
@@ -123,7 +121,7 @@ export function BuilderShell({ resumeId, title }: { resumeId: string; title: str
           <div className="group-data-[collapsible=icon]:hidden">
             <h1 className="truncate text-sm font-semibold text-foreground">{title}</h1>
             <div className="mt-1.5">
-              <AutosaveIndicator resumeId={resumeId} />
+              <AutosaveIndicator />
             </div>
           </div>
         </SidebarHeader>
@@ -158,18 +156,32 @@ export function BuilderShell({ resumeId, title }: { resumeId: string; title: str
         </SidebarContent>
 
         <SidebarFooter className="gap-2 border-t border-border">
-          <a href={`/api/resumes/${resumeId}/export/pdf`} download className="block">
-            <Button type="button" variant="outline" size="sm" className="w-full justify-start group-data-[collapsible=icon]:justify-center">
-              <FileDown />
-              <span className="group-data-[collapsible=icon]:hidden">Download PDF</span>
-            </Button>
-          </a>
-          <a href={`/api/resumes/${resumeId}/export/docx`} download className="block">
-            <Button type="button" variant="outline" size="sm" className="w-full justify-start group-data-[collapsible=icon]:justify-center">
-              <FileDown />
-              <span className="group-data-[collapsible=icon]:hidden">Download DOCX</span>
-            </Button>
-          </a>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full justify-start group-data-[collapsible=icon]:justify-center"
+            disabled={exportingFormat !== null}
+            onClick={() => handleExport("pdf")}
+          >
+            {exportingFormat === "pdf" ? <Loader2 className="animate-spin" /> : <FileDown />}
+            <span className="group-data-[collapsible=icon]:hidden">
+              {exportingFormat === "pdf" ? "Preparing PDF…" : "Download PDF"}
+            </span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full justify-start group-data-[collapsible=icon]:justify-center"
+            disabled={exportingFormat !== null}
+            onClick={() => handleExport("docx")}
+          >
+            {exportingFormat === "docx" ? <Loader2 className="animate-spin" /> : <FileDown />}
+            <span className="group-data-[collapsible=icon]:hidden">
+              {exportingFormat === "docx" ? "Preparing DOCX…" : "Download DOCX"}
+            </span>
+          </Button>
         </SidebarFooter>
       </Sidebar>
 
@@ -178,7 +190,7 @@ export function BuilderShell({ resumeId, title }: { resumeId: string; title: str
         <div className="flex items-center gap-2 border-b border-border bg-background px-3 py-2.5 lg:hidden">
           <SidebarTrigger />
           <h1 className="min-w-0 flex-1 truncate text-sm font-semibold">{title}</h1>
-          <AutosaveIndicator resumeId={resumeId} />
+          <AutosaveIndicator />
         </div>
         <div className="flex items-center justify-center gap-2 border-b border-border py-2 lg:hidden">
           <Button
@@ -237,12 +249,10 @@ export function BuilderShell({ resumeId, title }: { resumeId: string; title: str
                 Step {step + 1} of {STEPS.length}
               </p>
               {isLastStep ? (
-                <a href={`/api/resumes/${resumeId}/export/pdf`} download>
-                  <Button type="button">
-                    Finish & Download
-                    <FileDown />
-                  </Button>
-                </a>
+                <Button type="button" disabled={exportingFormat !== null} onClick={() => handleExport("pdf")}>
+                  {exportingFormat === "pdf" ? "Preparing…" : "Finish & Download"}
+                  {exportingFormat === "pdf" ? <Loader2 className="animate-spin" /> : <FileDown />}
+                </Button>
               ) : (
                 <Button type="button" onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}>
                   Next
