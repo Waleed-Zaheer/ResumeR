@@ -14,6 +14,7 @@ export const sampleResumeData: ResumeData = {
     website: "mayachen.design",
     nationality: "American",
     dateOfBirth: "1992-04-18",
+    photo: "",
   },
   summary:
     "Product designer with 7+ years crafting design systems and B2B SaaS experiences. Led the redesign of a core workflow that increased activation by 34% and cut support tickets by half.",
@@ -86,5 +87,5 @@ export const sampleResumeData: ResumeData = {
   sectionOrder: ["summary", "experience", "education", "skills", "projects", "certifications", "languages"],
   templateId: "modern",
   accentColor: "blue",
-  metadata: { pageSize: "letter" },
+  metadata: { pageSize: "letter", europassStyle: "classic", showPhoto: false },
 };

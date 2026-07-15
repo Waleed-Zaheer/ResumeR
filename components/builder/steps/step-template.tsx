@@ -4,15 +4,24 @@ import { Check } from "lucide-react";
 import { useResumeStore } from "@/store/resume-store";
 import { templateConfigs, templateOrder } from "@/components/resume/templates/shared/template-config";
 import { accentColors, accentColorOrder } from "@/components/resume/templates/shared/accent-colors";
+import type { EuropassStyle } from "@/lib/types/resume";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+
+const EUROPASS_STYLES: { id: EuropassStyle; label: string; description: string }[] = [
+  { id: "classic", label: "Classic", description: "Official EU-blue header and CEFR grid table." },
+  { id: "monochrome", label: "Monochrome", description: "Same layout, no color — safe for grayscale printing." },
+  { id: "ats-safe", label: "ATS-Safe", description: "Single column, no tables or color — maximizes parser compatibility." },
+];
 
 export function StepTemplate() {
   const templateId = useResumeStore((s) => s.data.templateId);
   const accentColor = useResumeStore((s) => s.data.accentColor);
-  const pageSize = useResumeStore((s) => s.data.metadata.pageSize);
+  const metadata = useResumeStore((s) => s.data.metadata);
   const setData = useResumeStore((s) => s.setData);
+  const { pageSize, europassStyle, showPhoto } = metadata;
 
   return (
     <div className="space-y-8">
@@ -80,7 +89,7 @@ export function StepTemplate() {
             type="button"
             size="sm"
             variant={pageSize === "letter" ? "default" : "outline"}
-            onClick={() => setData({ metadata: { pageSize: "letter" } })}
+            onClick={() => setData({ metadata: { ...metadata, pageSize: "letter" } })}
           >
             Letter
           </Button>
@@ -88,12 +97,65 @@ export function StepTemplate() {
             type="button"
             size="sm"
             variant={pageSize === "a4" ? "default" : "outline"}
-            onClick={() => setData({ metadata: { pageSize: "a4" } })}
+            onClick={() => setData({ metadata: { ...metadata, pageSize: "a4" } })}
           >
             A4
           </Button>
         </div>
       </div>
+
+      {templateId === "europass" && (
+        <>
+          <div className="space-y-3">
+            <Label>Europass style</Label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {EUROPASS_STYLES.map((style) => {
+                const active = europassStyle === style.id;
+                return (
+                  <button
+                    key={style.id}
+                    type="button"
+                    onClick={() =>
+                      setData({
+                        metadata: {
+                          ...metadata,
+                          europassStyle: style.id,
+                          showPhoto: style.id === "ats-safe" ? false : metadata.showPhoto,
+                        },
+                      })
+                    }
+                    className={cn(
+                      "rounded-lg border p-3 text-left transition-colors",
+                      active ? "border-primary ring-1 ring-primary" : "border-border hover:bg-muted"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{style.label}</span>
+                      {active && <Check className="size-4 text-primary" />}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{style.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2.5 rounded-lg border border-border p-3 text-sm">
+            <Checkbox
+              checked={showPhoto}
+              disabled={europassStyle === "ats-safe"}
+              onCheckedChange={(checked) => setData({ metadata: { ...metadata, showPhoto: checked === true } })}
+            />
+            <span>
+              <span className="font-medium">Include photo</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Add the photo you uploaded in Personal Info to the CV header.
+                {europassStyle === "ats-safe" && " Disabled for the ATS-Safe style."}
+              </span>
+            </span>
+          </label>
+        </>
+      )}
     </div>
   );
 }

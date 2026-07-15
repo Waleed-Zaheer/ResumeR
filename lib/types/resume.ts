@@ -12,5 +12,6 @@ export type {
   LinkItem,
   TemplateId,
   AccentColor,
+  EuropassStyle,
   SectionKey,
 } from "@/lib/validations/resume";

@@ -9,6 +9,7 @@ export const personalInfoSchema = z.object({
   website: z.string().url("Enter a valid URL").optional().or(z.literal("")).default(""),
   nationality: z.string().optional().default(""),
   dateOfBirth: z.string().optional().default(""),
+  photo: z.string().optional().default(""),
 });
 
 export const linkItemSchema = z.object({
@@ -90,6 +91,15 @@ export const languageItemSchema = z.object({
 export const templateIdSchema = z.enum(["minimal", "modern", "compact", "executive", "europass"]);
 export const accentColorSchema = z.enum(["default", "blue", "green", "slate", "burgundy"]);
 
+/**
+ * Europass-only style categories:
+ * - classic: official EU-blue header and CEFR grid table.
+ * - monochrome: same layout, no color — safe for grayscale printing/scanning.
+ * - ats-safe: single-column, no tables/color, CEFR levels as plain text —
+ *   maximizes compatibility with applicant tracking system parsers.
+ */
+export const europassStyleSchema = z.enum(["classic", "monochrome", "ats-safe"]);
+
 export const SECTION_KEYS = [
   "summary",
   "experience",
@@ -110,6 +120,7 @@ export const resumeDataSchema = z.object({
     website: "",
     nationality: "",
     dateOfBirth: "",
+    photo: "",
   }),
   summary: z.string().default(""),
   experience: z.array(experienceItemSchema).default([]),
@@ -123,8 +134,12 @@ export const resumeDataSchema = z.object({
   templateId: templateIdSchema.default("minimal"),
   accentColor: accentColorSchema.default("default"),
   metadata: z
-    .object({ pageSize: z.enum(["letter", "a4"]).default("letter") })
-    .default({ pageSize: "letter" }),
+    .object({
+      pageSize: z.enum(["letter", "a4"]).default("letter"),
+      europassStyle: europassStyleSchema.default("classic"),
+      showPhoto: z.boolean().default(false),
+    })
+    .default({ pageSize: "letter", europassStyle: "classic", showPhoto: false }),
 });
 
 export type ResumeData = z.infer<typeof resumeDataSchema>;
@@ -140,6 +155,7 @@ export type Cefr = z.infer<typeof cefrSchema>;
 export type LinkItem = z.infer<typeof linkItemSchema>;
 export type TemplateId = z.infer<typeof templateIdSchema>;
 export type AccentColor = z.infer<typeof accentColorSchema>;
+export type EuropassStyle = z.infer<typeof europassStyleSchema>;
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
 export function createEmptyResumeData(): ResumeData {

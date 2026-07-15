@@ -1,18 +1,37 @@
 import type { ReactNode } from "react";
-import type { ResumeData, SectionKey, LanguageItem, CefrLevel } from "@/lib/types/resume";
+import type { ResumeData, SectionKey, LanguageItem, CefrLevel, EuropassStyle } from "@/lib/types/resume";
 import { templateConfigs } from "../shared/template-config";
 import { formatDateRange, formatMonthYear, sortExperienceDesc } from "@/lib/resume/format";
 
 /**
  * Europass — follows the official EU CV layout: a labeled personal-information
- * block (with nationality / date of birth), reverse-chronological experience
- * and education, and a CEFR (A1-C2) grid for language skills instead of a
- * free-text proficiency label.
+ * block (with nationality / date of birth / optional photo), reverse-
+ * chronological experience and education, and a CEFR (A1-C2) grid for
+ * language skills instead of a free-text proficiency label.
+ *
+ * Three style categories (`data.metadata.europassStyle`) share this layout:
+ * - classic: official EU blue, CEFR grid table, photo allowed.
+ * - monochrome: same layout in black/gray only, photo allowed.
+ * - ats-safe: no color, no tables (CEFR as plain text), never a photo —
+ *   maximizes compatibility with ATS resume parsers.
  */
 
-const EUROPASS_BLUE = "#003399";
 const INK_COLOR = "#171717";
 const META_COLOR = "#3f3f46";
+
+interface StyleTokens {
+  accent: string;
+  useTable: boolean;
+  showPhoto: boolean;
+}
+
+function getStyleTokens(style: EuropassStyle, showPhoto: boolean): StyleTokens {
+  return {
+    accent: style === "classic" ? "#003399" : INK_COLOR,
+    useTable: style !== "ats-safe",
+    showPhoto: style !== "ats-safe" && showPhoto,
+  };
+}
 
 const CEFR_COLUMNS: { key: keyof NonNullable<LanguageItem["cefr"]>; label: string }[] = [
   { key: "listening", label: "Listening" },
@@ -25,6 +44,7 @@ const CEFR_COLUMNS: { key: keyof NonNullable<LanguageItem["cefr"]>; label: strin
 export function EuropassTemplate({ data }: { data: ResumeData }) {
   const cfg = templateConfigs.europass;
   const { personalInfo } = data;
+  const style = getStyleTokens(data.metadata.europassStyle, data.metadata.showPhoto);
 
   const contactParts = [
     personalInfo.email,
@@ -43,34 +63,46 @@ export function EuropassTemplate({ data }: { data: ResumeData }) {
       style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
     >
       <header
+        className="flex items-start justify-between"
         style={{
-          borderBottom: `3pt solid ${EUROPASS_BLUE}`,
+          borderBottom: `3pt solid ${style.accent}`,
           paddingBottom: "8pt",
           marginBottom: `${cfg.spacingPt.sectionGap}pt`,
+          gap: "12pt",
         }}
       >
-        <div style={{ fontSize: "8pt", fontWeight: 700, letterSpacing: "0.08em", color: EUROPASS_BLUE }}>
-          CURRICULUM VITAE
-        </div>
-        <h1 style={{ fontSize: `${cfg.fontSizePt.name}pt`, fontWeight: 700, margin: 0, color: INK_COLOR }}>
-          {personalInfo.fullName || "Your Name"}
-        </h1>
-        {personalInfo.jobTitle && (
-          <div style={{ fontSize: `${cfg.fontSizePt.body}pt`, marginTop: "2pt", color: META_COLOR }}>
-            {personalInfo.jobTitle}
+        <div>
+          <div style={{ fontSize: "8pt", fontWeight: 700, letterSpacing: "0.08em", color: style.accent }}>
+            CURRICULUM VITAE
           </div>
+          <h1 style={{ fontSize: `${cfg.fontSizePt.name}pt`, fontWeight: 700, margin: 0, color: INK_COLOR }}>
+            {personalInfo.fullName || "Your Name"}
+          </h1>
+          {personalInfo.jobTitle && (
+            <div style={{ fontSize: `${cfg.fontSizePt.body}pt`, marginTop: "2pt", color: META_COLOR }}>
+              {personalInfo.jobTitle}
+            </div>
+          )}
+        </div>
+        {style.showPhoto && personalInfo.photo && (
+          // eslint-disable-next-line @next/next/no-img-element -- base64 data URL, not an optimizable remote asset
+          <img
+            src={personalInfo.photo}
+            alt=""
+            style={{ width: "72pt", height: "72pt", objectFit: "cover", borderRadius: "4pt", flexShrink: 0 }}
+          />
         )}
       </header>
 
       <div className="flex flex-col" style={{ gap: `${cfg.spacingPt.sectionGap}pt` }}>
-        {renderPersonalInformation(personalInfo, contactParts, cfg.fontSizePt.body, cfg.fontSizePt.meta)}
-        {data.sectionOrder.map((key) => renderSection(key, data, cfg.fontSizePt.body, cfg.fontSizePt.meta))}
+        {renderPersonalInformation(personalInfo, contactParts, cfg.fontSizePt.body, cfg.fontSizePt.meta, style)}
+        {data.sectionOrder.map((key) => renderSection(key, data, cfg.fontSizePt.body, cfg.fontSizePt.meta, style))}
       </div>
     </div>
   );
 }
 
-function SectionHeading({ children }: { children: string }) {
+function SectionHeading({ accent, children }: { accent: string; children: string }) {
   return (
     <h2
       style={{
@@ -78,11 +110,11 @@ function SectionHeading({ children }: { children: string }) {
         fontWeight: 700,
         textTransform: "uppercase",
         letterSpacing: "0.05em",
-        color: EUROPASS_BLUE,
+        color: accent,
         margin: 0,
         marginBottom: "6pt",
         paddingBottom: "2pt",
-        borderBottom: `1pt solid ${EUROPASS_BLUE}`,
+        borderBottom: `1pt solid ${accent}`,
       }}
     >
       {children}
@@ -94,7 +126,8 @@ function renderPersonalInformation(
   personalInfo: ResumeData["personalInfo"],
   contactParts: string[],
   bodyPt: number,
-  metaPt: number
+  metaPt: number,
+  style: StyleTokens
 ): ReactNode {
   const rows = [
     contactParts.length > 0 && ["Contact", contactParts.join("   •   ")],
@@ -106,7 +139,7 @@ function renderPersonalInformation(
 
   return (
     <section key="personal-information">
-      <SectionHeading>Personal Information</SectionHeading>
+      <SectionHeading accent={style.accent}>Personal Information</SectionHeading>
       <div className="flex flex-col" style={{ gap: "3pt" }}>
         {rows.map(([label, value]) => (
           <div key={label} className="flex" style={{ gap: "8pt", fontSize: `${bodyPt}pt`, color: INK_COLOR }}>
@@ -121,22 +154,28 @@ function renderPersonalInformation(
   );
 }
 
-function renderSection(key: SectionKey, data: ResumeData, bodyPt: number, metaPt: number): ReactNode {
+function renderSection(
+  key: SectionKey,
+  data: ResumeData,
+  bodyPt: number,
+  metaPt: number,
+  style: StyleTokens
+): ReactNode {
   switch (key) {
     case "summary":
-      return renderSummary(data, bodyPt);
+      return renderSummary(data, bodyPt, style);
     case "experience":
-      return renderExperience(data, bodyPt, metaPt);
+      return renderExperience(data, bodyPt, metaPt, style);
     case "education":
-      return renderEducation(data, bodyPt, metaPt);
+      return renderEducation(data, bodyPt, metaPt, style);
     case "skills":
-      return renderSkills(data, bodyPt);
+      return renderSkills(data, bodyPt, style);
     case "projects":
-      return renderProjects(data, bodyPt, metaPt);
+      return renderProjects(data, bodyPt, metaPt, style);
     case "certifications":
-      return renderCertifications(data, bodyPt, metaPt);
+      return renderCertifications(data, bodyPt, metaPt, style);
     case "languages":
-      return renderLanguages(data, bodyPt, metaPt);
+      return renderLanguages(data, bodyPt, metaPt, style);
     default:
       return null;
   }
@@ -192,22 +231,22 @@ function EntryBlock({
   );
 }
 
-function renderSummary(data: ResumeData, bodyPt: number): ReactNode {
+function renderSummary(data: ResumeData, bodyPt: number, style: StyleTokens): ReactNode {
   if (!data.summary.trim()) return null;
   return (
     <section key="summary">
-      <SectionHeading>Profile</SectionHeading>
+      <SectionHeading accent={style.accent}>Profile</SectionHeading>
       <p style={{ fontSize: `${bodyPt}pt`, margin: 0, lineHeight: 1.5, color: INK_COLOR }}>{data.summary}</p>
     </section>
   );
 }
 
-function renderExperience(data: ResumeData, bodyPt: number, metaPt: number): ReactNode {
+function renderExperience(data: ResumeData, bodyPt: number, metaPt: number, style: StyleTokens): ReactNode {
   if (data.experience.length === 0) return null;
   const items = sortExperienceDesc(data.experience);
   return (
     <section key="experience">
-      <SectionHeading>Work Experience</SectionHeading>
+      <SectionHeading accent={style.accent}>Work Experience</SectionHeading>
       <div className="flex flex-col" style={{ gap: "8pt" }}>
         {items.map((exp) => (
           <EntryBlock
@@ -226,11 +265,11 @@ function renderExperience(data: ResumeData, bodyPt: number, metaPt: number): Rea
   );
 }
 
-function renderEducation(data: ResumeData, bodyPt: number, metaPt: number): ReactNode {
+function renderEducation(data: ResumeData, bodyPt: number, metaPt: number, style: StyleTokens): ReactNode {
   if (data.education.length === 0) return null;
   return (
     <section key="education">
-      <SectionHeading>Education and Training</SectionHeading>
+      <SectionHeading accent={style.accent}>Education and Training</SectionHeading>
       <div className="flex flex-col" style={{ gap: "8pt" }}>
         {data.education.map((edu) => (
           <EntryBlock
@@ -250,12 +289,12 @@ function renderEducation(data: ResumeData, bodyPt: number, metaPt: number): Reac
   );
 }
 
-function renderSkills(data: ResumeData, bodyPt: number): ReactNode {
+function renderSkills(data: ResumeData, bodyPt: number, style: StyleTokens): ReactNode {
   const groups = data.skills.filter((group) => group.items.length > 0);
   if (groups.length === 0) return null;
   return (
     <section key="skills">
-      <SectionHeading>Digital and Other Skills</SectionHeading>
+      <SectionHeading accent={style.accent}>Digital and Other Skills</SectionHeading>
       <div className="flex flex-col" style={{ gap: "3pt" }}>
         {groups.map((group) => (
           <div key={group.id} style={{ fontSize: `${bodyPt}pt`, color: INK_COLOR }}>
@@ -268,11 +307,11 @@ function renderSkills(data: ResumeData, bodyPt: number): ReactNode {
   );
 }
 
-function renderProjects(data: ResumeData, bodyPt: number, metaPt: number): ReactNode {
+function renderProjects(data: ResumeData, bodyPt: number, metaPt: number, style: StyleTokens): ReactNode {
   if (data.projects.length === 0) return null;
   return (
     <section key="projects">
-      <SectionHeading>Projects</SectionHeading>
+      <SectionHeading accent={style.accent}>Projects</SectionHeading>
       <div className="flex flex-col" style={{ gap: "8pt" }}>
         {data.projects.map((project) => (
           <EntryBlock
@@ -291,11 +330,11 @@ function renderProjects(data: ResumeData, bodyPt: number, metaPt: number): React
   );
 }
 
-function renderCertifications(data: ResumeData, bodyPt: number, metaPt: number): ReactNode {
+function renderCertifications(data: ResumeData, bodyPt: number, metaPt: number, style: StyleTokens): ReactNode {
   if (data.certifications.length === 0) return null;
   return (
     <section key="certifications">
-      <SectionHeading>Certifications</SectionHeading>
+      <SectionHeading accent={style.accent}>Certifications</SectionHeading>
       <div className="flex flex-col" style={{ gap: "8pt" }}>
         {data.certifications.map((cert) => (
           <EntryBlock
@@ -317,16 +356,16 @@ function cefrCell(level: CefrLevel | undefined): string {
   return level ?? "—";
 }
 
-function renderLanguages(data: ResumeData, bodyPt: number, metaPt: number): ReactNode {
+function renderLanguages(data: ResumeData, bodyPt: number, metaPt: number, style: StyleTokens): ReactNode {
   if (data.languages.length === 0) return null;
   return (
     <section key="languages">
-      <SectionHeading>Language Skills</SectionHeading>
+      <SectionHeading accent={style.accent}>Language Skills</SectionHeading>
       <div className="flex flex-col" style={{ gap: "8pt" }}>
         {data.languages.map((lang) => (
           <div key={lang.id} className="flex flex-col" style={{ gap: "3pt" }}>
             <div style={{ fontSize: `${bodyPt}pt`, fontWeight: 700, color: INK_COLOR }}>{lang.language}</div>
-            {lang.cefr ? (
+            {lang.cefr && style.useTable ? (
               <table style={{ borderCollapse: "collapse", fontSize: `${metaPt}pt` }}>
                 <thead>
                   <tr>
@@ -356,7 +395,7 @@ function renderLanguages(data: ResumeData, bodyPt: number, metaPt: number): Reac
                           padding: "3pt 6pt",
                           textAlign: "center",
                           fontWeight: 700,
-                          color: EUROPASS_BLUE,
+                          color: style.accent,
                         }}
                       >
                         {cefrCell(lang.cefr?.[col.key])}
@@ -365,6 +404,10 @@ function renderLanguages(data: ResumeData, bodyPt: number, metaPt: number): Reac
                   </tr>
                 </tbody>
               </table>
+            ) : lang.cefr ? (
+              <div style={{ fontSize: `${metaPt}pt`, color: META_COLOR }}>
+                {CEFR_COLUMNS.map((col) => `${col.label}: ${cefrCell(lang.cefr?.[col.key])}`).join("   •   ")}
+              </div>
             ) : (
               <div style={{ fontSize: `${metaPt}pt`, color: META_COLOR }}>{lang.proficiency}</div>
             )}

@@ -1,11 +1,19 @@
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import type { ResumeData, SectionKey, LanguageItem, CefrLevel } from "@/lib/types/resume";
+import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import type { ResumeData, SectionKey, LanguageItem, CefrLevel, EuropassStyle } from "@/lib/types/resume";
 import { templateConfigs } from "../shared/template-config";
 import { formatDateRange, formatMonthYear, sortExperienceDesc } from "@/lib/resume/format";
 
-/** Europass PDF export — mirrors `EuropassTemplate` (the on-screen DOM equivalent). */
+/**
+ * Europass PDF export — mirrors `EuropassTemplate` (the on-screen DOM
+ * equivalent), including the classic/monochrome/ats-safe style categories
+ * and the optional photo.
+ */
 
-const EUROPASS_BLUE = "#003399";
+const INK_COLOR = "#171717";
+
+function getAccent(style: EuropassStyle): string {
+  return style === "classic" ? "#003399" : INK_COLOR;
+}
 
 const CEFR_COLUMNS: { key: keyof NonNullable<LanguageItem["cefr"]>; label: string }[] = [
   { key: "listening", label: "Listening" },
@@ -17,7 +25,10 @@ const CEFR_COLUMNS: { key: keyof NonNullable<LanguageItem["cefr"]>; label: strin
 
 export function EuropassPdfDocument({ data }: { data: ResumeData }) {
   const cfg = templateConfigs.europass;
-  const styles = buildStyles(cfg.fontSizePt.name, cfg.fontSizePt.body, cfg.fontSizePt.meta);
+  const accent = getAccent(data.metadata.europassStyle);
+  const useTable = data.metadata.europassStyle !== "ats-safe";
+  const showPhoto = useTable && data.metadata.showPhoto && Boolean(data.personalInfo.photo);
+  const styles = buildStyles(cfg.fontSizePt.name, cfg.fontSizePt.body, cfg.fontSizePt.meta, accent);
   const sortedExperience = sortExperienceDesc(data.experience);
   const { personalInfo } = data;
 
@@ -34,36 +45,41 @@ export function EuropassPdfDocument({ data }: { data: ResumeData }) {
   return (
     <Document>
       <Page size={data.metadata.pageSize === "a4" ? "A4" : "LETTER"} style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>CURRICULUM VITAE</Text>
-          <Text style={styles.name}>{personalInfo.fullName || "Your Name"}</Text>
-          {personalInfo.jobTitle ? <Text style={styles.jobTitle}>{personalInfo.jobTitle}</Text> : null}
+        <View style={[styles.header, { flexDirection: "row", justifyContent: "space-between" }]}>
+          <View>
+            <Text style={styles.eyebrow}>CURRICULUM VITAE</Text>
+            <Text style={styles.name}>{personalInfo.fullName || "Your Name"}</Text>
+            {personalInfo.jobTitle ? <Text style={styles.jobTitle}>{personalInfo.jobTitle}</Text> : null}
+          </View>
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop */}
+          {showPhoto ? <Image src={personalInfo.photo} style={styles.photo} /> : null}
         </View>
 
         {renderPersonalInformation(personalInfo, contactParts, styles)}
-        {data.sectionOrder.map((section) => renderSection(section, data, sortedExperience, styles))}
+        {data.sectionOrder.map((section) => renderSection(section, data, sortedExperience, styles, useTable))}
       </Page>
     </Document>
   );
 }
 
-function buildStyles(namePt: number, bodyPt: number, metaPt: number) {
+function buildStyles(namePt: number, bodyPt: number, metaPt: number, accent: string) {
   return StyleSheet.create({
     page: { padding: 40, fontFamily: "Helvetica", fontSize: bodyPt, color: "#171717" },
-    header: { borderBottomWidth: 3, borderBottomColor: EUROPASS_BLUE, paddingBottom: 8, marginBottom: 14 },
-    eyebrow: { fontSize: 8, fontFamily: "Helvetica-Bold", color: EUROPASS_BLUE, letterSpacing: 1, marginBottom: 2 },
+    header: { borderBottomWidth: 3, borderBottomColor: accent, paddingBottom: 8, marginBottom: 14 },
+    photo: { width: 56, height: 56, borderRadius: 3, objectFit: "cover" },
+    eyebrow: { fontSize: 8, fontFamily: "Helvetica-Bold", color: accent, letterSpacing: 1, marginBottom: 2 },
     name: { fontSize: namePt, fontFamily: "Helvetica-Bold", marginBottom: 2 },
     jobTitle: { fontSize: bodyPt, color: "#444444" },
     heading: {
       fontSize: 11,
       fontFamily: "Helvetica-Bold",
-      color: EUROPASS_BLUE,
+      color: accent,
       textTransform: "uppercase",
       letterSpacing: 0.5,
       marginBottom: 6,
       marginTop: 14,
       borderBottomWidth: 1,
-      borderBottomColor: EUROPASS_BLUE,
+      borderBottomColor: accent,
       paddingBottom: 2,
     },
     row: { flexDirection: "row", marginBottom: 3 },
@@ -91,7 +107,7 @@ function buildStyles(namePt: number, bodyPt: number, metaPt: number) {
     cefrValueCell: {
       fontSize: metaPt,
       fontFamily: "Helvetica-Bold",
-      color: EUROPASS_BLUE,
+      color: accent,
       textAlign: "center",
       padding: 3,
     },
@@ -169,7 +185,8 @@ function renderSection(
   section: SectionKey,
   data: ResumeData,
   sortedExperience: ResumeData["experience"],
-  styles: Styles
+  styles: Styles,
+  useTable: boolean
 ) {
   switch (section) {
     case "summary": {
@@ -281,7 +298,7 @@ function renderSection(
           {data.languages.map((lang) => (
             <View key={lang.id} wrap={false}>
               <Text style={styles.langName}>{lang.language}</Text>
-              {lang.cefr ? (
+              {lang.cefr && useTable ? (
                 <View style={styles.cefrTable}>
                   {CEFR_COLUMNS.map((col, i) => (
                     <View key={col.key} style={i === CEFR_COLUMNS.length - 1 ? { flex: 1 } : styles.cefrCol}>
@@ -290,6 +307,12 @@ function renderSection(
                     </View>
                   ))}
                 </View>
+              ) : lang.cefr ? (
+                <Text style={styles.metaSmall}>
+                  {CEFR_COLUMNS.map((col) => `${col.label.replace("\n", " ")}: ${cefrCell(lang.cefr?.[col.key])}`).join(
+                    "   •   "
+                  )}
+                </Text>
               ) : (
                 <Text style={styles.metaSmall}>{lang.proficiency}</Text>
               )}

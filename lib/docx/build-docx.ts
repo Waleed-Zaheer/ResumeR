@@ -1,5 +1,5 @@
-import { Document, Packer, Paragraph, TextRun, AlignmentType, TabStopType, BorderStyle, Table, TableRow, TableCell, WidthType } from "docx";
-import type { ResumeData, TemplateId, LanguageItem, CefrLevel } from "@/lib/types/resume";
+import { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, TabStopType, BorderStyle, Table, TableRow, TableCell, WidthType } from "docx";
+import type { ResumeData, TemplateId, LanguageItem, CefrLevel, EuropassStyle } from "@/lib/types/resume";
 import { templateConfigs, type TemplateConfig } from "@/components/resume/templates/shared/template-config";
 import { formatDateRange, formatMonthYear, sortExperienceDesc } from "@/lib/resume/format";
 
@@ -19,6 +19,11 @@ const TEMPLATE_STRUCTURE: Record<
 };
 
 const EUROPASS_BLUE = "003399";
+const INK_HEX = "171717";
+
+function getEuropassAccent(style: EuropassStyle): string {
+  return style === "classic" ? EUROPASS_BLUE : INK_HEX;
+}
 
 const CEFR_COLUMNS: { key: keyof NonNullable<LanguageItem["cefr"]>; label: string }[] = [
   { key: "listening", label: "Listening" },
@@ -30,6 +35,27 @@ const CEFR_COLUMNS: { key: keyof NonNullable<LanguageItem["cefr"]>; label: strin
 
 function cefrCell(level: CefrLevel | undefined): string {
   return level ?? "—";
+}
+
+const DATA_URL_IMAGE_TYPES: Record<string, "jpg" | "png" | "gif" | "bmp"> = {
+  jpeg: "jpg",
+  jpg: "jpg",
+  png: "png",
+  gif: "gif",
+  bmp: "bmp",
+};
+
+/** Parses a `data:image/...;base64,...` URL into docx's `ImageRun` input shape, or `null` if malformed/unsupported. */
+function parsePhotoDataUrl(photo: string): { type: "jpg" | "png" | "gif" | "bmp"; data: Buffer } | null {
+  const match = /^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/.exec(photo);
+  if (!match) return null;
+  const type = DATA_URL_IMAGE_TYPES[match[1].toLowerCase()];
+  if (!type) return null;
+  try {
+    return { type, data: Buffer.from(match[2], "base64") };
+  } catch {
+    return null;
+  }
 }
 
 function pt(fontSizePt: number) {
@@ -91,7 +117,11 @@ function metaParagraph(cfg: TemplateConfig, text: string, spacingAfter = 0, alig
   });
 }
 
-function buildCefrTable(cfg: TemplateConfig, cefr: NonNullable<LanguageItem["cefr"]>): Table {
+function cefrPlainText(cefr: NonNullable<LanguageItem["cefr"]>): string {
+  return CEFR_COLUMNS.map((col) => `${col.label}: ${cefrCell(cefr[col.key])}`).join("   •   ");
+}
+
+function buildCefrTable(cfg: TemplateConfig, cefr: NonNullable<LanguageItem["cefr"]>, accent: string): Table {
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [
@@ -123,7 +153,7 @@ function buildCefrTable(cfg: TemplateConfig, cefr: NonNullable<LanguageItem["cef
                       bold: true,
                       size: pt(cfg.fontSizePt.meta),
                       font: FONT,
-                      color: EUROPASS_BLUE,
+                      color: accent,
                     }),
                   ],
                 }),
@@ -139,7 +169,29 @@ export function buildDocx(data: ResumeData): Document {
   const cfg = templateConfigs[data.templateId];
   const { justifyDates, centerHeader, headerRule, compactSkills } = TEMPLATE_STRUCTURE[data.templateId];
   const headerAlignment = centerHeader ? AlignmentType.CENTER : undefined;
+  const isEuropass = data.templateId === "europass";
+  const europassStyle = data.metadata.europassStyle;
+  const accent = isEuropass ? getEuropassAccent(europassStyle) : "444444";
+  const useCefrTable = !isEuropass || europassStyle !== "ats-safe";
+  const showPhoto = isEuropass && europassStyle !== "ats-safe" && data.metadata.showPhoto;
+  const photo = showPhoto ? parsePhotoDataUrl(data.personalInfo.photo) : null;
   const children: (Paragraph | Table)[] = [];
+
+  if (photo) {
+    children.push(
+      new Paragraph({
+        alignment: headerAlignment,
+        spacing: { after: 40 },
+        children: [
+          new ImageRun({
+            type: photo.type,
+            data: photo.data,
+            transformation: { width: 64, height: 64 },
+          }),
+        ],
+      })
+    );
+  }
 
   children.push(
     new Paragraph({
@@ -205,7 +257,7 @@ export function buildDocx(data: ResumeData): Document {
             style: BorderStyle.SINGLE,
             size: 12,
             space: 4,
-            color: data.templateId === "europass" ? EUROPASS_BLUE : "444444",
+            color: accent,
           },
         },
         children: [],
@@ -353,8 +405,10 @@ export function buildDocx(data: ResumeData): Document {
                 children: [new TextRun({ text: lang.language, bold: true, size: pt(cfg.fontSizePt.body), font: FONT })],
               })
             );
-            if (lang.cefr) {
-              children.push(buildCefrTable(cfg, lang.cefr));
+            if (lang.cefr && useCefrTable) {
+              children.push(buildCefrTable(cfg, lang.cefr, accent));
+            } else if (lang.cefr) {
+              children.push(metaParagraph(cfg, cefrPlainText(lang.cefr), twips(cfg.spacingPt.itemGap)));
             } else {
               children.push(metaParagraph(cfg, lang.proficiency, twips(cfg.spacingPt.itemGap)));
             }
