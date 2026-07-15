@@ -12,6 +12,11 @@ const userSchema = new Schema(
       required: true,
       default: "credentials",
     },
+    phone: { type: String },
+    address: { type: String },
+    designation: { type: String },
+    occupation: { type: String },
+    lastLogin: { type: Date },
   },
   { timestamps: true }
 );

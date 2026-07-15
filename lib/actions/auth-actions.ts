@@ -16,6 +16,17 @@ const signUpSchema = z.object({
 
 export type AuthActionState = { error?: string } | undefined;
 
+/** Next's `redirect()` throws a special error to unwind the render tree — never treat it as a real failure. */
+function isRedirectError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
+}
+
 export async function signUpAction(
   _prevState: AuthActionState,
   formData: FormData
@@ -32,14 +43,29 @@ export async function signUpAction(
 
   const { name, email, password } = parsed.data;
 
-  await dbConnect();
+  try {
+    await dbConnect();
+  } catch (error) {
+    console.error("Sign-up: database connection failed", error);
+    return { error: "We couldn't reach the server. Please try again in a moment." };
+  }
+
   const existing = await User.findOne({ email }).lean();
   if (existing) {
     return { error: "An account with this email already exists" };
   }
 
   const passwordHash = await hashPassword(password);
-  await User.create({ name, email, passwordHash, provider: "credentials" });
+  try {
+    await User.create({ name, email, passwordHash, provider: "credentials", lastLogin: new Date() });
+  } catch (error) {
+    // Handles the race where two sign-ups for the same email land between the findOne check and create.
+    if (error && typeof error === "object" && "code" in error && error.code === 11000) {
+      return { error: "An account with this email already exists" };
+    }
+    console.error("Sign-up: failed to create user", error);
+    return { error: "Something went wrong creating your account. Please try again." };
+  }
 
   try {
     await signIn("credentials", { email, password, redirectTo: "/dashboard" });
@@ -47,7 +73,9 @@ export async function signUpAction(
     if (error instanceof AuthError) {
       return { error: "Account created, but sign-in failed. Please log in." };
     }
-    throw error;
+    if (isRedirectError(error)) throw error;
+    console.error("Sign-up: post-signup sign-in failed", error);
+    return { error: "Account created, but sign-in failed. Please log in." };
   }
 
   redirect("/dashboard");
@@ -60,13 +88,19 @@ export async function loginAction(
   const email = formData.get("email");
   const password = formData.get("password");
 
+  if (typeof email !== "string" || !email.trim() || typeof password !== "string" || !password) {
+    return { error: "Enter your email and password" };
+  }
+
   try {
     await signIn("credentials", { email, password, redirectTo: "/dashboard" });
   } catch (error) {
+    if (isRedirectError(error)) throw error;
     if (error instanceof AuthError) {
       return { error: "Invalid email or password" };
     }
-    throw error;
+    console.error("Login: unexpected sign-in failure", error);
+    return { error: "Something went wrong signing you in. Please try again." };
   }
 
   redirect("/dashboard");

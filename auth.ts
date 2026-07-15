@@ -25,12 +25,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
 
-        await dbConnect();
+        try {
+          await dbConnect();
+        } catch (error) {
+          console.error("Auth: database connection failed", error);
+          return null;
+        }
+
         const user = await User.findOne({ email }).lean();
         if (!user?.passwordHash) return null;
 
         const valid = await verifyPassword(password, user.passwordHash);
         if (!valid) return null;
+
+        await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }).catch((error) => {
+          console.error("Auth: failed to record lastLogin", error);
+        });
 
         return {
           id: String(user._id),
@@ -53,19 +63,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
     async signIn({ user, account }) {
       if (account?.provider === "google" && user.email) {
-        await dbConnect();
-        await User.findOneAndUpdate(
-          { email: user.email },
-          {
-            $setOnInsert: {
-              email: user.email,
-              name: user.name,
-              image: user.image,
-              provider: "google",
+        try {
+          await dbConnect();
+          await User.findOneAndUpdate(
+            { email: user.email },
+            {
+              $setOnInsert: {
+                email: user.email,
+                name: user.name,
+                image: user.image,
+                provider: "google",
+              },
+              $set: { lastLogin: new Date() },
             },
-          },
-          { upsert: true }
-        );
+            { upsert: true }
+          );
+        } catch (error) {
+          console.error("Auth: Google sign-in user upsert failed", error);
+          return false;
+        }
       }
       return true;
     },
