@@ -14,7 +14,6 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#18181b",
         }}
       >
         <ResumeForgeMark size={size.width * 0.6} color="#eab308" />

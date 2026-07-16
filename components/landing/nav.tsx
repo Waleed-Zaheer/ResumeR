@@ -60,9 +60,7 @@ export function MarketingNav() {
           href="/"
           className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"
         >
-          <span className="flex size-7 shrink-0 items-center justify-center bg-[#18181b]">
-            <ResumeForgeMark size={17} color="#eab308" />
-          </span>
+          <ResumeForgeMark size={22} className="shrink-0 text-primary" />
           Resume<span className="text-primary">Forge</span>
         </Link>
 
