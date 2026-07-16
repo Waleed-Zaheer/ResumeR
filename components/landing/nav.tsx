@@ -58,10 +58,13 @@ export function MarketingNav() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <Link
           href="/"
-          className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"
+          className="flex items-center gap-1 text-lg font-semibold tracking-tight text-foreground"
         >
           <ResumeForgeMark size={22} className="shrink-0 text-primary" />
-          Resume<span className="text-primary">Forge</span>
+          <p className="gap-0.5 flex">
+            <span>Resume</span>
+            <span className="text-primary">Forge</span>
+          </p>
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

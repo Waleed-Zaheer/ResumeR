@@ -1,11 +1,14 @@
-import type { Metadata } from "next";
-import { Public_Sans } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import "./globals.css";
-import { cn } from "@/lib/utils";
+import './globals.css';
 
+import { Public_Sans } from 'next/font/google';
+
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { TopLoader } from '@/components/ui/top-loader';
+import { cn } from '@/lib/utils';
+
+import type { Metadata } from "next";
 const publicSans = Public_Sans({
   subsets: ["latin"],
   variable: "--font-public-sans",
@@ -24,9 +27,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn("h-full", publicSans.variable, "font-sans")}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn("h-full", publicSans.variable, "font-sans")}
+    >
       <body className="min-h-full flex flex-col antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TopLoader />
           <TooltipProvider delay={200}>
             {children}
             <Toaster />
