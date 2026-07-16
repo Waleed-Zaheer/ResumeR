@@ -1,20 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { useSyncExternalStore } from "react";
-import { useTheme } from "next-themes";
-import { motion } from "motion/react";
-import { Menu, Moon, Sun } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Menu, Moon, Sun } from 'lucide-react';
+import { motion } from 'motion/react';
+import { useTheme } from 'next-themes';
+import Link from 'next/link';
+import { useSyncExternalStore } from 'react';
+
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+    Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
 const navLinks = [
   { href: "#features", label: "Features" },
@@ -29,7 +25,11 @@ function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   // next-themes only knows the real theme after hydration; useSyncExternalStore
   // lets us flip from the SSR default to the client value without a setState-in-effect.
-  const mounted = useSyncExternalStore(noopSubscribe, getMountedSnapshot, getMountedServerSnapshot);
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    getMountedSnapshot,
+    getMountedServerSnapshot,
+  );
 
   const isDark = mounted && resolvedTheme === "dark";
 
@@ -54,8 +54,18 @@ export function MarketingNav() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60"
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-foreground">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"
+        >
+          <span className="relative flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-[#18181b]">
+            <span className="relative flex h-[17px] w-[13px] flex-col justify-center gap-[2px] rounded-[2px] bg-primary px-[2.5px]">
+              <span className="h-[2px] w-full rounded-full bg-[#18181b]" />
+              <span className="h-[2px] w-[70%] rounded-full bg-[#18181b]" />
+              <span className="h-[2px] w-[70%] rounded-full bg-[#18181b]" />
+            </span>
+          </span>
           Resume<span className="text-primary">Forge</span>
         </Link>
 
@@ -74,19 +84,29 @@ export function MarketingNav() {
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
+            <Button
+              variant="ghost"
+              nativeButton={false}
+              render={<Link href="/login" />}
+            >
               Log in
             </Button>
           </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button nativeButton={false} render={<Link href="/signup" />}>Get Started</Button>
+            <Button nativeButton={false} render={<Link href="/signup" />}>
+              Get Started
+            </Button>
           </motion.div>
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
           <ThemeToggle />
           <Sheet>
-            <SheetTrigger render={<Button variant="ghost" size="icon" aria-label="Open menu" />}>
+            <SheetTrigger
+              render={
+                <Button variant="ghost" size="icon" aria-label="Open menu" />
+              }
+            >
               <Menu className="size-4" />
             </SheetTrigger>
             <SheetContent side="right">
@@ -107,13 +127,19 @@ export function MarketingNav() {
               <div className="mt-auto flex flex-col gap-2 p-4">
                 <SheetClose
                   render={<Link href="/login" />}
-                  className={cn(buttonVariants({ variant: "outline" }), "h-9 w-full")}
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "h-9 w-full",
+                  )}
                 >
                   Log in
                 </SheetClose>
                 <SheetClose
                   render={<Link href="/signup" />}
-                  className={cn(buttonVariants({ variant: "default" }), "h-9 w-full")}
+                  className={cn(
+                    buttonVariants({ variant: "default" }),
+                    "h-9 w-full",
+                  )}
                 >
                   Get Started
                 </SheetClose>
