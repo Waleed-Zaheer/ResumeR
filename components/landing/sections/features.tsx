@@ -1,6 +1,6 @@
 "use client";
 
-import { CloudUpload, Eye, FileDown, LayoutTemplate, Palette, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Eye, FileDown, LayoutTemplate, Palette, Save, ShieldCheck, type LucideIcon } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useScrollReveal } from "@/components/landing/animations/use-scroll-reveal";
 
@@ -29,15 +29,15 @@ const features: Feature[] = [
     description: "Download a pixel-perfect PDF or an editable DOCX in one click, whenever you need to apply.",
   },
   {
-    icon: CloudUpload,
-    title: "Autosave, always in sync",
+    icon: Save,
+    title: "Autosave to this browser",
     description:
-      "Every change is saved to your account automatically, so you can pick up right where you left off on any device.",
+      "Every change is saved locally as you type, so you can close the tab and pick up right where you left off.",
   },
   {
     icon: LayoutTemplate,
-    title: "4 ATS-safe templates",
-    description: "Minimal, Modern, Compact, and Executive — switch anytime without losing your content.",
+    title: "5 ATS-safe templates",
+    description: "Minimal, Modern, Compact, Executive, and Europass — switch anytime without losing your content.",
   },
   {
     icon: Palette,
