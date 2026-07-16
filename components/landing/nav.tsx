@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useSyncExternalStore } from 'react';
 
+import { ResumeForgeMark } from '@/components/brand/resume-forge-mark';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
     Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger
@@ -59,12 +60,8 @@ export function MarketingNav() {
           href="/"
           className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground"
         >
-          <span className="relative flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-[#18181b]">
-            <span className="relative flex h-[17px] w-[13px] flex-col justify-center gap-[2px] rounded-[2px] bg-primary px-[2.5px]">
-              <span className="h-[2px] w-full rounded-full bg-[#18181b]" />
-              <span className="h-[2px] w-[70%] rounded-full bg-[#18181b]" />
-              <span className="h-[2px] w-[70%] rounded-full bg-[#18181b]" />
-            </span>
+          <span className="size-7 shrink-0">
+            <ResumeForgeMark size={28} />
           </span>
           Resume<span className="text-primary">Forge</span>
         </Link>

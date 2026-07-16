@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { ResumeForgeMark } from "./icon";
+import { ResumeForgeMark } from "@/components/brand/resume-forge-mark";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
