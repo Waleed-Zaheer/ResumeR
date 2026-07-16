@@ -2,14 +2,12 @@ const INK = "#18181b";
 const GOLD = "#eab308";
 
 /**
- * Abstract anvil silhouette — leans into "Forge" rather than generic
- * document clipart. Pieces overlap slightly at every seam so the shape
- * reads as one continuous object, not floating blocks. Shared between the
+ * Lucide's "anvil" glyph on a sharp-cornered dark square. Shared between the
  * generated favicon/app-icon routes and the marketing nav so they can't
  * drift out of sync.
  */
 export function ResumeForgeMark({ size }: { size: number }) {
-  const s = size / 32;
+  const iconSize = size * 0.6;
   return (
     <div
       style={{
@@ -19,67 +17,25 @@ export function ResumeForgeMark({ size }: { size: number }) {
         alignItems: "center",
         justifyContent: "center",
         background: INK,
-        borderRadius: 7 * s,
+        borderRadius: 0,
       }}
     >
-      <div
-        style={{
-          position: "relative",
-          width: 24 * s,
-          height: 17 * s,
-          display: "flex",
-        }}
+      <svg
+        width={iconSize}
+        height={iconSize}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={GOLD}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        {/* Base */}
-        <div
-          style={{
-            position: "absolute",
-            top: 9 * s,
-            left: 0,
-            width: 17 * s,
-            height: 8 * s,
-            background: GOLD,
-            borderRadius: `${1 * s}px 0 ${2 * s}px ${2 * s}px`,
-          }}
-        />
-        {/* Waist — kept narrow so the face/base blocks read as a clear
-            hourglass silhouette even at 16px */}
-        <div
-          style={{
-            position: "absolute",
-            top: 4.5 * s,
-            left: 6 * s,
-            width: 4 * s,
-            height: 5.5 * s,
-            background: GOLD,
-          }}
-        />
-        {/* Face (flat top block the waist sits under) */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 1 * s,
-            width: 14 * s,
-            height: 5 * s,
-            background: GOLD,
-            borderRadius: `${1.5 * s}px ${1.5 * s}px 0 0`,
-          }}
-        />
-        {/* Horn — short and bold rather than a thin sliver, so it survives
-            shrinking to a 16px favicon */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 14 * s,
-            width: 7 * s,
-            height: 5 * s,
-            background: GOLD,
-            clipPath: "polygon(0 0, 100% 45%, 0 100%)",
-          }}
-        />
-      </div>
+        <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
+        <path d="M7 5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1 7 7 0 0 1-7 7H8a1 1 0 0 1-1-1z" />
+        <path d="M9 12v5" />
+        <path d="M15 12v5" />
+        <path d="M5 20a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3 1 1 0 0 1-1 1H6a1 1 0 0 1-1-1" />
+      </svg>
     </div>
   );
 }
