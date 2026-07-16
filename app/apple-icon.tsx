@@ -16,7 +16,7 @@ export default function AppleIcon() {
         justifyContent: "center",
       }}
     >
-      <ResumeForgeMark size={size.width * 0.6} color="#eab308" />
+      <ResumeForgeMark size={size.width * 0.8} color="#eab308" />
     </div>,
     { ...size },
   );
