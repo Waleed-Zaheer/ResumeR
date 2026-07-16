@@ -1,7 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
+
+// Dashboard/builder are private, per-account screens with no unique public
+// content - keep them out of search results even though robots.ts/sitemap.ts
+// already steer crawlers away.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AppLayout({
   children,

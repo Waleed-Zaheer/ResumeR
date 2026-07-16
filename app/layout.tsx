@@ -9,16 +9,68 @@ import { TopLoader } from '@/components/ui/top-loader';
 import { cn } from '@/lib/utils';
 
 import type { Metadata } from "next";
+
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+
 const publicSans = Public_Sans({
   subsets: ["latin"],
   variable: "--font-public-sans",
   display: "swap",
 });
 
+// Auth.js already treats NEXTAUTH_URL as this app's canonical production
+// origin (see .env.local.example) - reused here so metadataBase/canonical
+// URLs/sitemap/robots all agree with it instead of tracking a second env var.
+const siteUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+const title = "ResumeForge — ATS-Friendly Resume Builder";
+const description =
+  "Build a polished, ATS-friendly resume in minutes. Live preview, multiple templates, instant PDF and DOCX export.";
+
 export const metadata: Metadata = {
-  title: "ResumeForge — ATS-Friendly Resume Builder",
-  description:
-    "Build a polished, ATS-friendly resume in minutes. Live preview, multiple templates, instant PDF and DOCX export.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: title,
+    template: "%s — ResumeForge",
+  },
+  description,
+  keywords: [
+    "resume builder",
+    "ATS-friendly resume",
+    "ATS resume templates",
+    "CV builder",
+    "resume maker",
+    "PDF resume",
+    "DOCX resume",
+  ],
+  applicationName: "ResumeForge",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "ResumeForge",
+    title,
+    description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
+  ...((process.env.GOOGLE_SITE_VERIFICATION || process.env.BING_SITE_VERIFICATION) && {
+    verification: {
+      ...(process.env.GOOGLE_SITE_VERIFICATION && { google: process.env.GOOGLE_SITE_VERIFICATION }),
+      ...(process.env.BING_SITE_VERIFICATION && {
+        other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION },
+      }),
+    },
+  }),
 };
 
 export default function RootLayout({
@@ -45,6 +97,7 @@ export default function RootLayout({
             <Toaster />
           </TooltipProvider>
         </ThemeProvider>
+        <GoogleAnalytics />
       </body>
     </html>
   );
