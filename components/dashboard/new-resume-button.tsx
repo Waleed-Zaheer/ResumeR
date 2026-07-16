@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { DRAFT_STORAGE_KEY } from "@/store/resume-store";
+import { topLoader } from "@/lib/top-loader";
 import { Button } from "@/components/ui/button";
 
 export function NewResumeButton({ className }: { className?: string }) {
@@ -15,6 +16,9 @@ export function NewResumeButton({ className }: { className?: string }) {
     } catch (error) {
       console.error("Failed to clear the previous draft", error);
     }
+    // Programmatic navigation (not a link click), so TopLoader's click
+    // interceptor won't see it — start the bar explicitly.
+    topLoader.start();
     router.push("/builder");
   }
 

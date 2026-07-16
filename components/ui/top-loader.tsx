@@ -2,32 +2,45 @@
 
 /**
  * TopLoader — a thin progress bar pinned to the top of the viewport that
- * animates while a page is loading (an `nprogress`/`react-top-loader`-style
- * indicator, no dependency on either). Mount it once near the app root;
- * `<TopLoader />` auto-starts and auto-completes on every React Router
- * navigation (via `useLocation`), and the imperative `topLoader` API
- * (`start`/`set`/`inc`/`done` — imported from `src/lib/top-loader.ts`) can
- * also be called from anywhere - e.g. wrap a real data fetch so the bar
- * tracks actual load time instead of just the route swap. The store lives
- * in its own file so this one only exports a React component and stays
- * hot-reloadable under Vite's Fast Refresh.
+ * animates while a page is loading (an `nprogress`-style indicator, no
+ * dependency on it). Mount it once near the app root: `<TopLoader />`.
+ *
+ * Built for the Next.js App Router, where `usePathname()`/`useSearchParams()`
+ * only change *after* a navigation has already finished — there is no
+ * router-level "navigation started" event to hook into. So this component:
+ *   1. Listens for clicks on same-origin, non-modified <a> (and Next <Link>)
+ *      clicks in the capture phase and calls `topLoader.start()` immediately,
+ *      before the browser/router has done anything.
+ *   2. Listens for `popstate` (back/forward) and does the same.
+ *   3. Calls `topLoader.done()` once `usePathname()`/`useSearchParams()`
+ *      actually change, which is the real "navigation finished" signal.
+ *      (This piece needs its own component wrapped in <Suspense> - Next
+ *      requires any `useSearchParams()` caller to have a Suspense boundary
+ *      above it, or static generation of routes like /_not-found breaks.)
+ *   4. Force-completes after a timeout as a safety net (aborted navigations,
+ *      same-URL link clicks, etc. would otherwise leave the bar stuck).
+ *
+ * The imperative `topLoader` API (`start`/`set`/`inc`/`done`, from
+ * `@/lib/top-loader`) can also be called directly - e.g. wrap a real data
+ * fetch, or a programmatic `router.push()`, so the bar tracks that instead
+ * of only reacting to link clicks.
  *
  * Usage:
- *   // once, near the app root (must be inside a react-router-dom <Router>):
+ *   // once, near the app root:
  *   <TopLoader />
  *
- *   // anywhere, to track something other than route navigation:
+ *   // anywhere, to track something other than a link-click navigation:
  *   import { topLoader } from "@/lib/top-loader"
  *   topLoader.start()
  *   await doSlowThing()
  *   topLoader.done()
  *
  * Depends on:
- *   - src/lib/top-loader.ts (the store + imperative topLoader API)
- *   - src/lib/utils.ts (cn helper)
- *   - react-router-dom's useLocation (this project's router)
+ *   - @/lib/top-loader.ts (the store + imperative topLoader API)
+ *   - @/lib/utils.ts (cn helper)
+ *   - next/navigation's usePathname/useSearchParams (this project's router)
  */
-import { useEffect, useRef, useState } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { Loader2Icon } from "lucide-react"
 
@@ -50,11 +63,61 @@ type TopLoaderProps = {
   /** Starting progress (0-1) when a load starts. */
   initialPosition?: number
   zIndex?: number
-  /** Auto `start()`/`done()` on every React Router navigation. Turn off to
-   * drive the bar entirely via the `topLoader` API yourself (e.g. so it
-   * tracks a data fetch instead of the route swap). */
+  /** Start the bar on link clicks/back-forward navigation and complete it
+   * when the route actually changes. Turn off to drive the bar entirely via
+   * the `topLoader` API yourself. */
   autoStartOnNavigation?: boolean
+  /** Force-complete a stuck "loading" bar after this many ms (aborted nav,
+   * clicking the current page's own link, etc). */
+  maxLoadingMs?: number
   className?: string
+}
+
+/** True for a same-tab, same-origin, unmodified left-click on an in-app link. */
+function isInterceptableLinkClick(event: MouseEvent): HTMLAnchorElement | null {
+  if (event.defaultPrevented) return null
+  if (event.button !== 0) return null
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null
+
+  const anchor = (event.target as Element | null)?.closest?.("a")
+  if (!anchor || !(anchor instanceof HTMLAnchorElement)) return null
+  if (!anchor.href) return null
+  if (anchor.target && anchor.target !== "_self") return null
+  if (anchor.hasAttribute("download")) return null
+
+  let url: URL
+  try {
+    url = new URL(anchor.href, window.location.href)
+  } catch {
+    return null
+  }
+  if (url.origin !== window.location.origin) return null
+
+  const samePath = url.pathname === window.location.pathname && url.search === window.location.search
+  const onlyHashDiffers = samePath && url.hash !== window.location.hash
+  if (samePath && (onlyHashDiffers || !url.hash)) return null
+
+  return anchor
+}
+
+/**
+ * Isolated because `useSearchParams()` requires a `<Suspense>` boundary
+ * above it in the App Router - keeping it out of the main component means
+ * the bar/spinner UI itself doesn't need one.
+ */
+function RouteChangeCompletion() {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const locationKey = `${pathname}?${searchParams.toString()}`
+  const prevLocationKeyRef = useRef(locationKey)
+
+  useEffect(() => {
+    if (prevLocationKeyRef.current === locationKey) return
+    prevLocationKeyRef.current = locationKey
+    topLoader.done(true)
+  }, [locationKey])
+
+  return null
 }
 
 function TopLoader({
@@ -67,11 +130,10 @@ function TopLoader({
   initialPosition = 0.08,
   zIndex = 1600,
   autoStartOnNavigation = true,
+  maxLoadingMs = 8000,
   className,
 }: TopLoaderProps = {}) {
   const [state, setState] = useState(topLoaderStore.state)
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
 
   useEffect(() => topLoaderStore.subscribe(setState), [])
 
@@ -87,21 +149,34 @@ function TopLoader({
     return () => window.clearTimeout(id)
   }, [state.status, speed])
 
-  const locationKey = `${pathname}?${searchParams.toString()}`
-  const prevLocationKeyRef = useRef(locationKey)
+  // Safety net: if nothing completes the bar (blocked navigation, clicking a
+  // link back to the current URL, a thrown error mid-navigation), don't
+  // leave it stuck at some partial width forever.
   useEffect(() => {
-    if (!autoStartOnNavigation || prevLocationKeyRef.current === locationKey) return
-    prevLocationKeyRef.current = locationKey
-    topLoader.start(initialPosition)
-    // Let the "loading" state paint at least one frame before completing,
-    // so fast (synchronous) navigations still show a visible blip instead
-    // of jumping straight from 0 to gone.
-    const raf = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => topLoader.done())
-    })
-    return () => window.cancelAnimationFrame(raf)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locationKey])
+    if (state.status !== "loading") return
+    const id = window.setTimeout(() => topLoader.done(true), maxLoadingMs)
+    return () => window.clearTimeout(id)
+  }, [state.status, maxLoadingMs])
+
+  // Real "navigation started" signal: intercept the click/popstate that
+  // triggers it, since the router itself won't tell us.
+  useEffect(() => {
+    if (!autoStartOnNavigation) return
+
+    function onClick(event: MouseEvent) {
+      if (isInterceptableLinkClick(event)) topLoader.start(initialPosition)
+    }
+    function onPopState() {
+      topLoader.start(initialPosition)
+    }
+
+    document.addEventListener("click", onClick, true)
+    window.addEventListener("popstate", onPopState)
+    return () => {
+      document.removeEventListener("click", onClick, true)
+      window.removeEventListener("popstate", onPopState)
+    }
+  }, [autoStartOnNavigation, initialPosition])
 
   const visible = state.status !== "initial"
   const glowColor = color ?? "var(--color-primary)"
@@ -109,33 +184,40 @@ function TopLoader({
     shadow === false ? undefined : typeof shadow === "string" ? shadow : `0 0 10px ${glowColor}, 0 0 5px ${glowColor}`
 
   return (
-    <div
-      aria-hidden
-      data-slot="top-loader"
-      data-status={state.status}
-      style={{ zIndex }}
-      className={cn("pointer-events-none fixed inset-x-0 top-0", className)}
-    >
-      <div
-        data-slot="top-loader-bar"
-        className={cn(!color && "bg-primary")}
-        style={{
-          width: `${state.progress}%`,
-          height,
-          backgroundColor: color,
-          opacity: visible ? 1 : 0,
-          boxShadow,
-          transition: `width ${speed}ms ease, opacity ${speed}ms ease`,
-        }}
-      />
-      {showSpinner && (
-        <Loader2Icon
-          data-slot="top-loader-spinner"
-          className={cn("fixed top-3 right-3 size-4 animate-spin", !color && "text-primary")}
-          style={{ color, opacity: visible ? 1 : 0, transition: `opacity ${speed}ms ease` }}
-        />
+    <>
+      {autoStartOnNavigation && (
+        <Suspense fallback={null}>
+          <RouteChangeCompletion />
+        </Suspense>
       )}
-    </div>
+      <div
+        aria-hidden
+        data-slot="top-loader"
+        data-status={state.status}
+        style={{ zIndex }}
+        className={cn("pointer-events-none fixed inset-x-0 top-0", className)}
+      >
+        <div
+          data-slot="top-loader-bar"
+          className={cn(!color && "bg-primary")}
+          style={{
+            width: `${state.progress}%`,
+            height,
+            backgroundColor: color,
+            opacity: visible ? 1 : 0,
+            boxShadow,
+            transition: `width ${speed}ms ease, opacity ${speed}ms ease`,
+          }}
+        />
+        {showSpinner && (
+          <Loader2Icon
+            data-slot="top-loader-spinner"
+            className={cn("fixed top-3 right-3 size-4 animate-spin", !color && "text-primary")}
+            style={{ color, opacity: visible ? 1 : 0, transition: `opacity ${speed}ms ease` }}
+          />
+        )}
+      </div>
+    </>
   )
 }
 

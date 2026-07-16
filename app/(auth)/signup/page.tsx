@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useActionState } from "react";
 import { signUpAction } from "@/lib/actions/auth-actions";
+import { topLoader } from "@/lib/top-loader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +12,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signUpAction, undefined);
+
+  // A <form action={...}> submit isn't a link click or a router.push, so
+  // TopLoader's click interceptor never sees it - drive the bar from the
+  // action's own pending state instead.
+  useEffect(() => {
+    if (pending) topLoader.start();
+    else topLoader.done(true);
+  }, [pending]);
 
   return (
     <Card>
