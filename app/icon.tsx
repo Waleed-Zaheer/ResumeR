@@ -16,7 +16,7 @@ export default function Icon() {
           justifyContent: "center",
         }}
       >
-        <ResumeForgeMark size={size.width * 0.6} color="#eab308" />
+        <ResumeForgeMark size={size.width * 0.85} color="#eab308" strokeWidth={2.5} />
       </div>
     ),
     { ...size }
