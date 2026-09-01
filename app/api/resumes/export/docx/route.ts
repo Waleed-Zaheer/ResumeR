@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { resumeDataSchema } from "@/lib/validations/resume";
 import { renderDocxBuffer } from "@/lib/docx/build-docx";
 import { toFileSlug } from "@/lib/resume/format";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,11 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return Response.json({ error: "Your session expired. Please log in again." }, { status: 401 });
+  }
+
+  const { allowed } = await checkRateLimit({ key: `export-docx:${session.user.id}`, limit: 20, windowMs: 10 * 60 * 1000 });
+  if (!allowed) {
+    return Response.json({ error: "Too many export requests. Please wait a few minutes and try again." }, { status: 429 });
   }
 
   let body: unknown;
