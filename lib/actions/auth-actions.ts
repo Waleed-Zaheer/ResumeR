@@ -7,6 +7,7 @@ import { User } from "@/models/User";
 import { hashPassword } from "@/lib/auth/password";
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
+import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 
 const signUpSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -31,6 +32,10 @@ export async function signUpAction(
   _prevState: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> {
+  const ip = await clientIp();
+  const { allowed } = await checkRateLimit({ key: `signup:${ip}`, limit: 10, windowMs: 60 * 60 * 1000 });
+  if (!allowed) return { error: "Too many attempts. Please wait a while and try again." };
+
   const parsed = signUpSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -85,6 +90,10 @@ export async function loginAction(
   _prevState: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> {
+  const ip = await clientIp();
+  const { allowed } = await checkRateLimit({ key: `login:${ip}`, limit: 10, windowMs: 10 * 60 * 1000 });
+  if (!allowed) return { error: "Too many attempts. Please wait a few minutes and try again." };
+
   const email = formData.get("email");
   const password = formData.get("password");
 
