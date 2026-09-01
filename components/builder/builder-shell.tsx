@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition, type ComponentType } from "react";
+import { useEffect, useState, useTransition, type ComponentType } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "@/components/ui/sonner";
+import { autoNameIfUntitled, touchResumeEntry } from "@/store/resume-list";
 import {
   ArrowLeft,
   ArrowRight,
@@ -83,7 +84,7 @@ const STEPS: StepDef[] = [
   },
 ];
 
-export function BuilderShell() {
+export function BuilderShell({ resumeId }: { resumeId: string }) {
   const [step, setStep] = useState(0);
   const [mobileView, setMobileView] = useState<"form" | "preview">("form");
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
@@ -92,6 +93,17 @@ export function BuilderShell() {
   const [, startTransition] = useTransition();
 
   const title = data.personalInfo.fullName.trim() || "Untitled Resume";
+
+  // Keep the dashboard's resume list card ("last edited", and a default
+  // name derived from personalInfo until the user renames it) in sync as
+  // the user types, debounced so it isn't a write on every keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      touchResumeEntry(resumeId);
+      autoNameIfUntitled(resumeId, title);
+    }, 800);
+    return () => clearTimeout(id);
+  }, [resumeId, title, data]);
 
   function handleExport(format: ExportFormat) {
     if (exportingFormat) return;
