@@ -1,29 +1,25 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { DRAFT_STORAGE_KEY } from "@/store/resume-store";
+import { createResumeEntry } from "@/store/resume-list";
 import { topLoader } from "@/lib/top-loader";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export function NewResumeButton({ className }: { className?: string }) {
   const router = useRouter();
 
   function handleClick() {
-    // No server-side resume storage — "new resume" just clears the locally
-    // saved draft before entering the builder.
-    try {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-    } catch (error) {
-      console.error("Failed to clear the previous draft", error);
-    }
+    const entry = createResumeEntry();
     // Programmatic navigation (not a link click), so TopLoader's click
     // interceptor won't see it — start the bar explicitly.
     topLoader.start();
-    router.push("/builder");
+    router.push(`/builder?id=${entry.id}`);
   }
 
   return (
     <Button className={className} onClick={handleClick}>
+      <Plus />
       New Resume
     </Button>
   );
