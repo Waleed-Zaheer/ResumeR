@@ -31,7 +31,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
 
 # vercel
 .vercel
@@ -54,3 +53,5 @@ temp_interactive_push.bat
 # Local planning docs — not meant for the public repo
 REQUIRED.md
 IMPROVEMENTS.md
+.gitignore
+config.bat
