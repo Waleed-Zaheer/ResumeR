@@ -9,7 +9,12 @@ import { createEmptyResumeData } from "@/lib/validations/resume";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-export const DRAFT_STORAGE_KEY = "resumeforge:draft:v1";
+/** Legacy single-draft key — kept only so `resume-list.ts` can migrate it. */
+export const LEGACY_DRAFT_STORAGE_KEY = "resumeforge:draft:v1";
+
+export function draftStorageKey(resumeId: string) {
+  return `resumeforge:draft:v1:${resumeId}`;
+}
 
 interface ResumeState {
   data: ResumeData;
@@ -62,7 +67,7 @@ function createSafeStorage(onError: (error: unknown) => void): PersistStorage<Pe
   };
 }
 
-export function createResumeStore(initial: ResumeData): ResumeStoreApi {
+export function createResumeStore(initial: ResumeData, resumeId: string): ResumeStoreApi {
   const store: ResumeStoreApi = createStore<ResumeState>()(
     persist(
       (set) => ({
@@ -74,7 +79,7 @@ export function createResumeStore(initial: ResumeData): ResumeStoreApi {
         setSaveStatus: (saveStatus) => set({ saveStatus }),
       }),
       {
-        name: DRAFT_STORAGE_KEY,
+        name: draftStorageKey(resumeId),
         storage: createSafeStorage((error) => {
           console.error("Resume draft: local save failed", error);
           store.setState({ saveStatus: "error" });
@@ -90,15 +95,31 @@ export function createResumeStore(initial: ResumeData): ResumeStoreApi {
 
 export function ResumeStoreProvider({
   initial,
+  resumeId,
   children,
 }: {
   initial: ResumeData;
+  resumeId: string;
   children: ReactNode;
 }) {
-  const [store] = useState<ResumeStoreApi>(() => createResumeStore(initial));
+  const [store] = useState<ResumeStoreApi>(() => createResumeStore(initial, resumeId));
 
   useEffect(() => {
     store.persist.rehydrate();
+  }, [store]);
+
+  // `saveStatus` starts back at "idle" after a patch is written but before
+  // the persist middleware's storage write completes on the next tick —
+  // narrow enough that a real mid-write unload is rare, but "error" (a full
+  // or unavailable localStorage) can persist, so warn for that case too.
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (store.getState().saveStatus === "error") {
+        event.preventDefault();
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [store]);
 
   return createElement(ResumeStoreContext.Provider, { value: store }, children);
